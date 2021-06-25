@@ -1,6 +1,6 @@
 {
 	"name": "pozitronik/yii2-relations",
-	"description": "Relational attributes support YII2",
+	"description": "Relational attributes support for YII2 ActiveRecord",
 	"type": "yii2-extension",
 	"keywords": [
 		"yii2",
