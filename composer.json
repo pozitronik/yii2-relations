@@ -1,0 +1,42 @@
+{
+	"name": "pozitronik/yii2-relations",
+	"description": "Relational attributes support YII2",
+	"type": "yii2-extension",
+	"keywords": [
+		"yii2",
+		"activerecord",
+		"trait",
+		"relation"
+	],
+	"license": "GPL-3.0",
+	"authors": [
+		{
+			"name": "Pavel Dubrovsky",
+			"email": "antikillerxxl@gmail.com"
+		}
+	],
+	"minimum-stability": "dev",
+	"require": {
+		"php": ">=7.4",
+		"pozitronik/yii2-helpers": "dev-master"
+	},
+	"require-dev": {
+		"yiisoft/yii2": "dev-master"
+	},
+	"autoload": {
+		"psr-4": {
+			"pozitronik\\core\\": "src"
+		}
+	},
+	"config": {
+		"fxp-asset": {
+			"enabled": false
+		}
+	},
+	"repositories": [
+		{
+			"type": "composer",
+			"url": "https://asset-packagist.org"
+		}
+	]
+}
