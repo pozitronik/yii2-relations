@@ -8,10 +8,18 @@ use Throwable;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use yii\db\ActiveRecord;
+use yii\db\BaseActiveRecord;
 
 /**
  * Trait Relations
  * Функции, общеприменимые ко всем таблицам связей.
+ *
+ * PHPStorm 2021.2 некорректно воспринимает объявления абстрактных методов в трейтах, поэтому они заменены на
+ * объявления в PHPDoc
+ * @method static findAll(mixed $condition)
+ * @see ActiveRecord::findAll()
+ * @method static findOne(mixed $condition)
+ * @see ActiveRecord::findOne()
  */
 trait RelationsTrait {
 
@@ -114,7 +122,7 @@ trait RelationsTrait {
 		if (empty($master) || empty($slave)) return;
 		/*Пришёл запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
 		if (is_subclass_of($master, ActiveRecord::class, false) && $master->isNewRecord) {
-			$master->on(ActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
+			$master->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
 				self::linkModel($event->data[0], $event->data[1]);
 			}, [$master, $slave]);
 			return;
@@ -266,20 +274,4 @@ trait RelationsTrait {
 			$model->delete();
 		}
 	}
-
-	/**
-	 * @param mixed $condition
-	 * @return static|null
-	 * @see ActiveRecord::findOne()
-	 * @noinspection ReturnTypeCanBeDeclaredInspection
-	 */
-	abstract public static function findOne($condition);
-
-	/**
-	 * @param mixed $condition
-	 * @return static[]
-	 * @see ActiveRecord::findAll()
-	 * @noinspection ReturnTypeCanBeDeclaredInspection
-	 */
-	abstract public static function findAll($condition);
 }
