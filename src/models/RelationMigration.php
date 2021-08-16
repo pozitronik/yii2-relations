@@ -27,7 +27,7 @@ class RelationMigration extends Migration {
 			$this->second_key => $this->integer()->notNull(),
 		]);
 
-		$this->createIndex("{$this->first_key}_{$this->second_key}", $this->table_name, [$this->first_key, $this->second_key], true);
+		$this->createIndex("{$this->table_name}_{$this->first_key}_{$this->second_key}", $this->table_name, [$this->first_key, $this->second_key], true);
 	}
 
 	/**
