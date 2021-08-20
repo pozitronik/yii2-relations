@@ -20,7 +20,7 @@ class RelationMigration extends Migration {
 	/**
 	 * @inheritDoc
 	 */
-	public function createIndex($name, $table, $columns, $unique = false) {
+	public function createIndex($name, $table, $columns, $unique = false):void {
 		if (strlen($name) > 64 /*max index name length*/) {
 			$name = substr($name, -64, 64);
 		}
