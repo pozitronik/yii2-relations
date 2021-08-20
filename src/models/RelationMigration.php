@@ -18,6 +18,16 @@ class RelationMigration extends Migration {
 	public string $second_key;
 
 	/**
+	 * @inheritDoc
+	 */
+	public function createIndex($name, $table, $columns, $unique = false) {
+		if (strlen($name) > 64 /*max index name length*/) {
+			$name = substr($name, -64, 64);
+		}
+		parent::createIndex($name, $table, $columns, $unique);
+	}
+
+	/**
 	 * {@inheritdoc}
 	 */
 	public function safeUp() {
