@@ -138,6 +138,7 @@ trait RelationsTrait {
 		$link->$second_name = self::extractKeyValue($slave);
 
 		$link->save();//save or update, whatever
+		$master->refresh();
 	}
 
 	/**
@@ -224,6 +225,7 @@ trait RelationsTrait {
 		if (null !== $model = static::findOne([self::getFirstAttributeName() => self::extractKeyValue($master), self::getSecondAttributeName() => self::extractKeyValue($slave)])) {
 			/** @var ActiveRecord $model */
 			$model->delete();
+			$master->refresh();
 		}
 	}
 
@@ -273,5 +275,6 @@ trait RelationsTrait {
 			/** @var ActiveRecord $model */
 			$model->delete();
 		}
+		$master->refresh();
 	}
 }
