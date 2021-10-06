@@ -116,15 +116,23 @@ trait RelationsTrait {
 	 * Линкует в этом релейшене две модели. Модели могут быть заданы как через айдишники, так и моделью, и ещё тупо строкой
 	 * @param ActiveRecord|int|string $master
 	 * @param ActiveRecord|int|string $slave
+	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
 	 * @throws Throwable
 	 */
-	public static function linkModel($master, $slave):void {
+	public static function linkModel($master, $slave, bool $backLink = false):void {
 		if (empty($master) || empty($slave)) return;
 		/*Пришёл запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
-		if (is_subclass_of($master, ActiveRecord::class, false) && $master->isNewRecord) {
+		if (!$backLink && is_subclass_of($master, ActiveRecord::class, false) && $master->isNewRecord) {
 			$master->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
-				self::linkModel($event->data[0], $event->data[1]);
-			}, [$master, $slave]);
+				self::linkModel($event->data[0], $event->data[1], $event->data[2]);
+			}, [$master, $slave, $backLink]);
+			return;
+		}
+		/*Пришёл обратный запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
+		if ($backLink && is_subclass_of($slave, ActiveRecord::class, false) && $slave->isNewRecord) {
+			$slave->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
+				self::linkModel($event->data[0], $event->data[1], $event->data[2]);
+			}, [$master, $slave, $backLink]);
 			return;
 		}
 
@@ -159,15 +167,15 @@ trait RelationsTrait {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						self::linkModel($master_item, $slave_item);
+						self::linkModel($master_item, $slave_item, $backLink);
 					}
-				} else self::linkModel($master_item, $slave);
+				} else self::linkModel($master_item, $slave, $backLink);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				self::linkModel($master, $slave_item);
+				self::linkModel($master, $slave_item, $backLink);
 			}
-		} else self::linkModel($master, $slave);
+		} else self::linkModel($master, $slave, $backLink);
 	}
 
 	/**
@@ -191,7 +199,7 @@ trait RelationsTrait {
 			}
 			foreach ($currentItems as $item) {//все
 				if (!in_array($item->$first_name, $masterItemsKeys)) {
-					$item::unlinkModel($item->$first_name, $slave);
+					$item::unlinkModel($item->$first_name, $slave, $backLink);
 				}
 			}
 
@@ -206,7 +214,7 @@ trait RelationsTrait {
 			}
 			foreach ($currentItems as $item) {//все
 				if (!in_array($item->$second_name, $slaveItemsKeys)) {
-					$item::unlinkModel($master, $item->$second_name);
+					$item::unlinkModel($master, $item->$second_name, $backLink);
 				}
 			}
 		}
@@ -217,15 +225,23 @@ trait RelationsTrait {
 	 * Удаляет единичную связь в этом релейшене
 	 * @param ActiveRecord|int|string $master
 	 * @param ActiveRecord|int|string $slave
+	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
 	 * @throws Throwable
 	 */
-	public static function unlinkModel($master, $slave):void {
+	public static function unlinkModel($master, $slave, bool $backLink = false):void {
 		if (empty($master) || empty($slave)) return;
 
 		if (null !== $model = static::findOne([self::getFirstAttributeName() => self::extractKeyValue($master), self::getSecondAttributeName() => self::extractKeyValue($slave)])) {
 			/** @var ActiveRecord $model */
 			$model->delete();
-			$master->refresh();
+			if (!$backLink && is_subclass_of($master, ActiveRecord::class, false)) {
+				/** @var ActiveRecord $master */
+				$master->refresh();
+			}
+			if ($backLink && is_subclass_of($slave, ActiveRecord::class, false)) {
+				/** @var ActiveRecord $slave */
+				$slave->refresh();
+			}
 		}
 	}
 
@@ -233,6 +249,7 @@ trait RelationsTrait {
 	 * Удаляет связь между моделями в этом релейшене
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
+	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
 	 * @throws Throwable
 	 *
 	 * Функция не будет работать с объектами, не имеющими атрибута/ключа id (даже если в качестве primaryKey указан другой атрибут).
@@ -242,21 +259,21 @@ trait RelationsTrait {
 	 * Передавать массивы строк/идентификаторов нельзя (только массив моделей)
 	 * @noinspection NotOptimalIfConditionsInspection
 	 */
-	public static function unlinkModels($master, $slave):void {
+	public static function unlinkModels($master, $slave, bool $backLink = false):void {
 		if (empty($master) || empty($slave)) return;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						self::unlinkModel($master_item, $slave_item);
+						self::unlinkModel($master_item, $slave_item, $backLink);
 					}
-				} else self::unlinkModel($master_item, $slave);
+				} else self::unlinkModel($master_item, $slave, $backLink);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				self::unlinkModel($master, $slave_item);
+				self::unlinkModel($master, $slave_item, $backLink);
 			}
-		} else self::unlinkModel($master, $slave);
+		} else self::unlinkModel($master, $slave, $backLink);
 	}
 
 	/**
