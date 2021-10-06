@@ -225,19 +225,21 @@ trait RelationsTrait {
 	 * Удаляет единичную связь в этом релейшене
 	 * @param ActiveRecord|int|string $master
 	 * @param ActiveRecord|int|string $slave
-     * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
-     * @throws Throwable
+	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
+	 * @throws Throwable
 	 */
-	public static function unlinkModel($master, $slave, bool $backLink):void {
+	public static function unlinkModel($master, $slave, bool $backLink = false):void {
 		if (empty($master) || empty($slave)) return;
 
 		if (null !== $model = static::findOne([self::getFirstAttributeName() => self::extractKeyValue($master), self::getSecondAttributeName() => self::extractKeyValue($slave)])) {
 			/** @var ActiveRecord $model */
 			$model->delete();
 			if (!$backLink && is_subclass_of($master, ActiveRecord::class, false)) {
+				/** @var ActiveRecord $master */
 				$master->refresh();
 			}
 			if ($backLink && is_subclass_of($slave, ActiveRecord::class, false)) {
+				/** @var ActiveRecord $slave */
 				$slave->refresh();
 			}
 		}
@@ -247,8 +249,8 @@ trait RelationsTrait {
 	 * Удаляет связь между моделями в этом релейшене
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
-     * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
-     * @throws Throwable
+	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
+	 * @throws Throwable
 	 *
 	 * Функция не будет работать с объектами, не имеющими атрибута/ключа id (даже если в качестве primaryKey указан другой атрибут).
 	 * Такое поведение оставлено специально во избежание ошибок проектирования
@@ -257,7 +259,7 @@ trait RelationsTrait {
 	 * Передавать массивы строк/идентификаторов нельзя (только массив моделей)
 	 * @noinspection NotOptimalIfConditionsInspection
 	 */
-	public static function unlinkModels($master, $slave, bool $backLink):void {
+	public static function unlinkModels($master, $slave, bool $backLink = false):void {
 		if (empty($master) || empty($slave)) return;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
