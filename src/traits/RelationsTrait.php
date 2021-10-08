@@ -146,7 +146,7 @@ trait RelationsTrait {
 		$link->$second_name = self::extractKeyValue($slave);
 
 		$link->save();//save or update, whatever
-		$master->refresh();
+		$backLink?$slave->refresh():$master->refresh();
 	}
 
 	/**
