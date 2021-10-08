@@ -281,14 +281,14 @@ trait RelationsTrait {
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
 	 * @throws Throwable
 	 */
-	public static function clearLinks($master, $backlink = false):void {
+	public static function clearLinks($master):void {
 		if (empty($master)) return;
 
 		if (is_array($master)) {
 			foreach ($master as $item) self::clearLinks($item);
 		}
 
-        foreach (static::findAll([$backlink?self::getSecondAttributeName():self::getFirstAttributeName() => self::extractKeyValue($master)]) as $model) {
+		foreach (static::findAll([self::getFirstAttributeName() => self::extractKeyValue($master)]) as $model) {
 			/** @var ActiveRecord $model */
 			$model->delete();
 		}
