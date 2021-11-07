@@ -12,11 +12,11 @@ use yii\db\ActiveRecord;
  * @property mixed $master
  * @property mixed $slave
  * @property ActiveRecord $relationLink
- * @property bool $success
+ * @property null|bool $success
  */
 class RelationResult extends Component {
 	public $master;
 	public $slave;
 	public ActiveRecord $relationLink;
-	public bool $success = false;
+	public ?bool $success = null;
 }

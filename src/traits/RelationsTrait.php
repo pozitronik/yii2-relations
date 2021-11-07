@@ -144,9 +144,8 @@ trait RelationsTrait {
 		$first_value = static::extractKeyValue($master);
 		$second_value = static::extractKeyValue($slave);
 
-		if (null !== $link = static::findOne([$first_name => $first_value, $second_name => $second_value])) {
-			$result->success = true;//Связь уже существует
-		} else {
+		/*Если связь уже существует, ничего делать не нужно*/
+		if (null === $link = static::findOne([$first_name => $first_value, $second_name => $second_value])) {
 			$link = new static();
 			$link->$first_name = $first_value;
 			$link->$second_name = $second_value;
