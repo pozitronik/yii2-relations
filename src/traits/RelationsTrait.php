@@ -66,7 +66,7 @@ trait RelationsTrait {
 	 */
 	public static function currentLink($master):array {
 		if (empty($master)) return [];
-		return static::findAll([self::getFirstAttributeName() => self::extractKeyValue($master)]);
+		return static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]);
 	}
 
 	/**
@@ -77,7 +77,7 @@ trait RelationsTrait {
 	 */
 	public static function currentBackLink($slave):array {
 		if (empty($slave)) return [];
-		return static::findAll([self::getSecondAttributeName() => self::extractKeyValue($slave)]);
+		return static::findAll([static::getSecondAttributeName() => static::extractKeyValue($slave)]);
 	}
 
 	/**
@@ -90,9 +90,9 @@ trait RelationsTrait {
 		$links = [[]];
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
-				$links[] = self::currentLink($master_item);
+				$links[] = static::currentLink($master_item);
 			}
-		} else $links[] = self::currentLink($master);
+		} else $links[] = static::currentLink($master);
 
 		return array_merge(...$links);
 	}
@@ -107,9 +107,9 @@ trait RelationsTrait {
 		$links = [[]];
 		if (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				$links[] = self::currentBackLink($slave_item);
+				$links[] = static::currentBackLink($slave_item);
 			}
-		} else $links[] = self::currentBackLink($slave);
+		} else $links[] = static::currentBackLink($slave);
 
 		return array_merge(...$links);
 	}
@@ -129,27 +129,33 @@ trait RelationsTrait {
 		/*Пришёл запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
 		if (!$backLink && is_subclass_of($master, ActiveRecord::class, false) && $master->isNewRecord) {
 			$master->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
-				return self::linkModel($event->data[0], $event->data[1], $event->data[2]);
+				return static::linkModel($event->data[0], $event->data[1], $event->data[2]);
 			}, [$master, $slave, $backLink]);
 		}
 		/*Пришёл обратный запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
 		if ($backLink && is_subclass_of($slave, ActiveRecord::class, false) && $slave->isNewRecord) {
 			$slave->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
-				return self::linkModel($event->data[0], $event->data[1], $event->data[2]);
+				return static::linkModel($event->data[0], $event->data[1], $event->data[2]);
 			}, [$master, $slave, $backLink]);
 		}
 
-		/** @var ActiveRecord $link */
-		$link = new self();
+		$first_name = static::getFirstAttributeName();
+		$second_name = static::getSecondAttributeName();
+		$first_value = static::extractKeyValue($master);
+		$second_value = static::extractKeyValue($slave);
 
-		$first_name = self::getFirstAttributeName();
-		$second_name = self::getSecondAttributeName();
-
-		$link->$first_name = self::extractKeyValue($master);
-		$link->$second_name = self::extractKeyValue($slave);
+		if (null !== $link = static::findOne([$first_name => $first_value, $second_name => $second_value])) {
+			$result->success = true;//Связь уже существует
+		} else {
+			$link = new static();
+			$link->$first_name = $first_value;
+			$link->$second_name = $second_value;
+			/** @var ActiveRecord $link */
+			$result->success = $link->save();//Пытаемся создать связь
+		}
 
 		$result->relationLink = $link;
-		$result->success = $link->save();//save or update, whatever
+
 		return $result;
 	}
 
@@ -166,22 +172,22 @@ trait RelationsTrait {
 		$result = [];
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return $result;
 		/*Удалим разницу (она может быть полной при очистке)*/
-		self::dropDiffered($master, $slave, $backLink);
+		static::dropDiffered($master, $slave, $backLink);
 
 		if (empty($slave)) return $result;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						$result[] = self::linkModel($master_item, $slave_item, $backLink);
+						$result[] = static::linkModel($master_item, $slave_item, $backLink);
 					}
-				} else $result[] = self::linkModel($master_item, $slave, $backLink);
+				} else $result[] = static::linkModel($master_item, $slave, $backLink);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				$result[] = self::linkModel($master, $slave_item, $backLink);
+				$result[] = static::linkModel($master, $slave_item, $backLink);
 			}
-		} else $result[] = self::linkModel($master, $slave, $backLink);
+		} else $result[] = static::linkModel($master, $slave, $backLink);
 		return $result;
 	}
 
@@ -196,13 +202,13 @@ trait RelationsTrait {
 	 */
 	private static function dropDiffered($master, $slave, bool $backLink = false):void {
 		if ($backLink) {
-			$currentItems = self::currentBackLinks($slave);
+			$currentItems = static::currentBackLinks($slave);
 			$masterItemsKeys = [];
-			$first_name = self::getFirstAttributeName();
+			$first_name = static::getFirstAttributeName();
 			if (is_array($master)) {//вычисляем ключи моделей, к которым привязан линк
-				foreach ($master as $value) $masterItemsKeys[] = self::extractKeyValue($value);
+				foreach ($master as $value) $masterItemsKeys[] = static::extractKeyValue($value);
 			} else {
-				$masterItemsKeys[] = self::extractKeyValue($master);
+				$masterItemsKeys[] = static::extractKeyValue($master);
 			}
 			foreach ($currentItems as $item) {//все
 				if (!in_array($item->$first_name, $masterItemsKeys)) {
@@ -211,13 +217,13 @@ trait RelationsTrait {
 			}
 
 		} else {
-			$currentItems = self::currentLinks($master);
+			$currentItems = static::currentLinks($master);
 			$slaveItemsKeys = [];
-			$second_name = self::getSecondAttributeName();
+			$second_name = static::getSecondAttributeName();
 			if (is_array($slave)) {//вычисляем ключи линкованных моделей
-				foreach ($slave as $value) $slaveItemsKeys[] = self::extractKeyValue($value);
+				foreach ($slave as $value) $slaveItemsKeys[] = static::extractKeyValue($value);
 			} else {
-				$slaveItemsKeys[] = self::extractKeyValue($slave);
+				$slaveItemsKeys[] = static::extractKeyValue($slave);
 			}
 			foreach ($currentItems as $item) {//все
 				if (!in_array($item->$second_name, $slaveItemsKeys)) {
@@ -242,7 +248,7 @@ trait RelationsTrait {
 		if (empty($master) || empty($slave)) return $result;
 
 		/** @var ActiveRecord $link */
-		if (null !== $link = static::findOne([self::getFirstAttributeName() => self::extractKeyValue($master), self::getSecondAttributeName() => self::extractKeyValue($slave)])) {
+		if (null !== $link = static::findOne([static::getFirstAttributeName() => static::extractKeyValue($master), static::getSecondAttributeName() => static::extractKeyValue($slave)])) {
 			$result->relationLink = $link;
 			$result->success = $link->delete();
 		}
@@ -269,15 +275,15 @@ trait RelationsTrait {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						$result[] = self::unlinkModel($master_item, $slave_item);
+						$result[] = static::unlinkModel($master_item, $slave_item);
 					}
-				} else $result[] = self::unlinkModel($master_item, $slave);
+				} else $result[] = static::unlinkModel($master_item, $slave);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				$result[] = self::unlinkModel($master, $slave_item);
+				$result[] = static::unlinkModel($master, $slave_item);
 			}
-		} else $result[] = self::unlinkModel($master, $slave);
+		} else $result[] = static::unlinkModel($master, $slave);
 		return $result;
 	}
 
@@ -293,12 +299,12 @@ trait RelationsTrait {
 		if (is_array($master)) {
 			$result = [[]];
 			foreach ($master as $item) {
-				$result[] = self::clearLinks($item);
+				$result[] = static::clearLinks($item);
 			}
 			return array_merge(...$result);
 		}
 		$result = [];
-		foreach (static::findAll([self::getFirstAttributeName() => self::extractKeyValue($master)]) as $link) {
+		foreach (static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]) as $link) {
 			/** @var ActiveRecord $link */
 			$result[] = new RelationResult([
 				'master' => $master,
