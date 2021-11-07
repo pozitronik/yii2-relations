@@ -12,7 +12,7 @@ use yii\db\ActiveRecord;
  * @property mixed $master
  * @property mixed $slave
  * @property ActiveRecord $relationLink
- * @property null|bool $success
+ * @property null|bool $success true: операция успешна, false: операция неуспешна, null: действие не производилось (не было необходимости)
  */
 class RelationResult extends Component {
 	public $master;
