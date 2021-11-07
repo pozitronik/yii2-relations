@@ -4,11 +4,13 @@ declare(strict_types = 1);
 namespace pozitronik\relations\traits;
 
 use pozitronik\helpers\ArrayHelper;
+use pozitronik\relations\models\RelationResult;
 use Throwable;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use yii\db\ActiveRecord;
 use yii\db\BaseActiveRecord;
+use yii\db\StaleObjectException;
 
 /**
  * Trait Relations
@@ -117,23 +119,24 @@ trait RelationsTrait {
 	 * @param ActiveRecord|int|string $master
 	 * @param ActiveRecord|int|string $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
+	 * @return RelationResult
+	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
-	public static function linkModel($master, $slave, bool $backLink = false):void {
-		if (empty($master) || empty($slave)) return;
+	public static function linkModel($master, $slave, bool $backLink = false):RelationResult {
+		$result = new RelationResult(compact('master', 'slave'));
+		if (empty($master) || empty($slave)) return $result;
 		/*Пришёл запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
 		if (!$backLink && is_subclass_of($master, ActiveRecord::class, false) && $master->isNewRecord) {
 			$master->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
-				self::linkModel($event->data[0], $event->data[1], $event->data[2]);
+				return self::linkModel($event->data[0], $event->data[1], $event->data[2]);
 			}, [$master, $slave, $backLink]);
-			return;
 		}
 		/*Пришёл обратный запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
 		if ($backLink && is_subclass_of($slave, ActiveRecord::class, false) && $slave->isNewRecord) {
 			$slave->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
-				self::linkModel($event->data[0], $event->data[1], $event->data[2]);
+				return self::linkModel($event->data[0], $event->data[1], $event->data[2]);
 			}, [$master, $slave, $backLink]);
-			return;
 		}
 
 		/** @var ActiveRecord $link */
@@ -145,7 +148,9 @@ trait RelationsTrait {
 		$link->$first_name = self::extractKeyValue($master);
 		$link->$second_name = self::extractKeyValue($slave);
 
-		$link->save();//save or update, whatever
+		$result->relationLink = $link;
+		$result->success = $link->save();//save or update, whatever
+		return $result;
 	}
 
 	/**
@@ -153,28 +158,31 @@ trait RelationsTrait {
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
+	 * @return RelationResult[]
 	 * @throws Throwable
 	 * @noinspection NotOptimalIfConditionsInspection
 	 */
-	public static function linkModels($master, $slave, bool $backLink = false):void {
-		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
+	public static function linkModels($master, $slave, bool $backLink = false):array {
+		$result = [];
+		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return $result;
 		/*Удалим разницу (она может быть полной при очистке)*/
 		self::dropDiffered($master, $slave, $backLink);
 
-		if (empty($slave)) return;
+		if (empty($slave)) return $result;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						self::linkModel($master_item, $slave_item, $backLink);
+						$result[] = self::linkModel($master_item, $slave_item, $backLink);
 					}
-				} else self::linkModel($master_item, $slave, $backLink);
+				} else $result[] = self::linkModel($master_item, $slave, $backLink);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				self::linkModel($master, $slave_item, $backLink);
+				$result[] = self::linkModel($master, $slave_item, $backLink);
 			}
-		} else self::linkModel($master, $slave, $backLink);
+		} else $result[] = self::linkModel($master, $slave, $backLink);
+		return $result;
 	}
 
 	/**
@@ -224,62 +232,80 @@ trait RelationsTrait {
 	 * Удаляет единичную связь в этом релейшене
 	 * @param ActiveRecord|int|string $master
 	 * @param ActiveRecord|int|string $slave
+	 * @return RelationResult
+	 * @throws InvalidConfigException
 	 * @throws Throwable
+	 * @throws StaleObjectException
 	 */
-	public static function unlinkModel($master, $slave):void {
-		if (empty($master) || empty($slave)) return;
+	public static function unlinkModel($master, $slave):RelationResult {
+		$result = new RelationResult(compact('master', 'slave'));
+		if (empty($master) || empty($slave)) return $result;
 
-		if (null !== $model = static::findOne([self::getFirstAttributeName() => self::extractKeyValue($master), self::getSecondAttributeName() => self::extractKeyValue($slave)])) {
-			/** @var ActiveRecord $model */
-			$model->delete();
+		/** @var ActiveRecord $link */
+		if (null !== $link = static::findOne([self::getFirstAttributeName() => self::extractKeyValue($master), self::getSecondAttributeName() => self::extractKeyValue($slave)])) {
+			$result->relationLink = $link;
+			$result->success = $link->delete();
 		}
+		return $result;
 	}
 
 	/**
 	 * Удаляет связь между моделями в этом релейшене
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
+	 * @return RelationResult[]
 	 * @throws Throwable
 	 *
 	 * Функция не будет работать с объектами, не имеющими атрибута/ключа id (даже если в качестве primaryKey указан другой атрибут).
 	 * Такое поведение оставлено специально во избежание ошибок проектирования
-	 * @see Privileges::setDropUserRights
 	 *
 	 * Передавать массивы строк/идентификаторов нельзя (только массив моделей)
 	 * @noinspection NotOptimalIfConditionsInspection
 	 */
-	public static function unlinkModels($master, $slave):void {
-		if (empty($master) || empty($slave)) return;
+	public static function unlinkModels($master, $slave):array {
+		$result = [];
+		if (empty($master) || empty($slave)) return $result;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						self::unlinkModel($master_item, $slave_item);
+						$result[] = self::unlinkModel($master_item, $slave_item);
 					}
-				} else self::unlinkModel($master_item, $slave);
+				} else $result[] = self::unlinkModel($master_item, $slave);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				self::unlinkModel($master, $slave_item);
+				$result[] = self::unlinkModel($master, $slave_item);
 			}
-		} else self::unlinkModel($master, $slave);
+		} else $result[] = self::unlinkModel($master, $slave);
+		return $result;
 	}
 
 	/**
 	 * Удаляет все связи от модели в этом релейшене
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
+	 * @return RelationResult[]
 	 * @throws Throwable
 	 */
-	public static function clearLinks($master):void {
-		if (empty($master)) return;
+	public static function clearLinks($master):array {
+		if (empty($master)) return [];
 
 		if (is_array($master)) {
-			foreach ($master as $item) self::clearLinks($item);
+			$result = [[]];
+			foreach ($master as $item) {
+				$result[] = self::clearLinks($item);
+			}
+			return array_merge(...$result);
 		}
-
-		foreach (static::findAll([self::getFirstAttributeName() => self::extractKeyValue($master)]) as $model) {
-			/** @var ActiveRecord $model */
-			$model->delete();
+		$result = [];
+		foreach (static::findAll([self::getFirstAttributeName() => self::extractKeyValue($master)]) as $link) {
+			/** @var ActiveRecord $link */
+			$result[] = new RelationResult([
+				'master' => $master,
+				'relationLink' => $link,
+				'result' => $link->delete()
+			]);
 		}
+		return $result;
 	}
 }
