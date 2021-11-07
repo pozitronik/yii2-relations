@@ -44,7 +44,7 @@ trait RelationsTrait {
 	 */
 	private static function getFirstAttributeName():string {
 		/** @var ActiveRecord $link */
-		$link = new self();
+		$link = new static();
 		return ArrayHelper::getValue($link->rules(), '0.0.0', new Exception('Не удалось получить атрибут для связи'));
 	}
 
@@ -54,14 +54,14 @@ trait RelationsTrait {
 	 */
 	private static function getSecondAttributeName():string {
 		/** @var ActiveRecord $link */
-		$link = new self();
+		$link = new static();
 		return ArrayHelper::getValue($link->rules(), '0.0.1', new Exception('Не удалось получить атрибут для связи'));
 	}
 
 	/**
 	 * Находит и возвращает существующую связь к базовой модели
 	 * @param ActiveRecord|int|string $master
-	 * @return self[]
+	 * @return static[]
 	 * @throws Throwable
 	 */
 	public static function currentLink($master):array {
@@ -72,7 +72,7 @@ trait RelationsTrait {
 	/**
 	 * Находит и возвращает существующую связь от базовой модели
 	 * @param ActiveRecord|int|string $slave
-	 * @return self[]
+	 * @return static[]
 	 * @throws Throwable
 	 */
 	public static function currentBackLink($slave):array {
@@ -83,7 +83,7 @@ trait RelationsTrait {
 	/**
 	 * Возвращает все связи к базовой модели
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
-	 * @return self[]
+	 * @return static[]
 	 * @throws Throwable
 	 */
 	public static function currentLinks($master):array {
@@ -100,7 +100,7 @@ trait RelationsTrait {
 	/**
 	 * Возвращает все связи от базовой модели
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
-	 * @return self[]
+	 * @return static[]
 	 * @throws Throwable
 	 */
 	public static function currentBackLinks($slave):array {
