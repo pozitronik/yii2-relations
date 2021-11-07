@@ -3,6 +3,7 @@ declare(strict_types = 1);
 
 namespace pozitronik\relations\models;
 
+use yii\base\Component;
 use yii\db\ActiveRecord;
 
 /**
@@ -13,7 +14,7 @@ use yii\db\ActiveRecord;
  * @property ActiveRecord $relationLink
  * @property bool $success
  */
-class RelationResult {
+class RelationResult extends Component {
 	public $master;
 	public $slave;
 	public ActiveRecord $relationLink;
