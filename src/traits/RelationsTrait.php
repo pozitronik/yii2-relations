@@ -5,6 +5,7 @@ namespace pozitronik\relations\traits;
 
 use pozitronik\helpers\ArrayHelper;
 use Throwable;
+use yii\base\Event;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use yii\db\ActiveRecord;
@@ -117,35 +118,33 @@ trait RelationsTrait {
 	 * @param ActiveRecord|int|string $master
 	 * @param ActiveRecord|int|string $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
+	 * @param bool $linkAfterPrimary Связывание произойдёт только после сохранения основной модели
+	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
-	public static function linkModel($master, $slave, bool $backLink = false):void {
+	public static function linkModel($master, $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
-		/*Пришёл запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
-		if (!$backLink && is_subclass_of($master, ActiveRecord::class, false) && $master->isNewRecord) {
-			$master->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
+		/*Определяем модель, являющуюся в этой связи основной*/
+		$primaryItem = $backLink?$slave:$master;
+		/*Связывание отложено, либо пришёл запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
+		$linkAfterPrimary = $linkAfterPrimary || (is_subclass_of($primaryItem, ActiveRecord::class, false) && $primaryItem->isNewRecord);
+
+		if ($linkAfterPrimary) {//Связывание произойдёт после сохранения основной модели
+			$primaryItem->on($primaryItem->isNewRecord?BaseActiveRecord::EVENT_AFTER_INSERT:BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
 				self::linkModel($event->data[0], $event->data[1], $event->data[2]);
 			}, [$master, $slave, $backLink]);
-			return;
+		} else {
+			/** @var ActiveRecord $link */
+			$link = new self();
+
+			$first_name = self::getFirstAttributeName();
+			$second_name = self::getSecondAttributeName();
+
+			$link->$first_name = self::extractKeyValue($master);
+			$link->$second_name = self::extractKeyValue($slave);
+
+			$link->save();//save or update, whatever
 		}
-		/*Пришёл обратный запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
-		if ($backLink && is_subclass_of($slave, ActiveRecord::class, false) && $slave->isNewRecord) {
-			$slave->on(BaseActiveRecord::EVENT_AFTER_INSERT, function($event) {//отложим связывание после сохранения
-				self::linkModel($event->data[0], $event->data[1], $event->data[2]);
-			}, [$master, $slave, $backLink]);
-			return;
-		}
-
-		/** @var ActiveRecord $link */
-		$link = new self();
-
-		$first_name = self::getFirstAttributeName();
-		$second_name = self::getSecondAttributeName();
-
-		$link->$first_name = self::extractKeyValue($master);
-		$link->$second_name = self::extractKeyValue($slave);
-
-		$link->save();//save or update, whatever
 	}
 
 	/**
@@ -153,10 +152,11 @@ trait RelationsTrait {
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
+	 * @param bool $linkAfterPrimary Связывание произойдёт только после сохранения основной модели
 	 * @throws Throwable
 	 * @noinspection NotOptimalIfConditionsInspection
 	 */
-	public static function linkModels($master, $slave, bool $backLink = false):void {
+	public static function linkModels($master, $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
 		/*Удалим разницу (она может быть полной при очистке)*/
 		self::dropDiffered($master, $slave, $backLink);
@@ -166,15 +166,15 @@ trait RelationsTrait {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						self::linkModel($master_item, $slave_item, $backLink);
+						self::linkModel($master_item, $slave_item, $backLink, $linkAfterPrimary);
 					}
-				} else self::linkModel($master_item, $slave, $backLink);
+				} else self::linkModel($master_item, $slave, $backLink, $linkAfterPrimary);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				self::linkModel($master, $slave_item, $backLink);
+				self::linkModel($master, $slave_item, $backLink, $linkAfterPrimary);
 			}
-		} else self::linkModel($master, $slave, $backLink);
+		} else self::linkModel($master, $slave, $backLink, $linkAfterPrimary);
 	}
 
 	/**
@@ -224,14 +224,21 @@ trait RelationsTrait {
 	 * Удаляет единичную связь в этом релейшене
 	 * @param ActiveRecord|int|string $master
 	 * @param ActiveRecord|int|string $slave
+	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
 	 * @throws Throwable
 	 */
-	public static function unlinkModel($master, $slave):void {
+	public static function unlinkModel($master, $slave, bool $clearAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
 
 		if (null !== $model = static::findOne([self::getFirstAttributeName() => self::extractKeyValue($master), self::getSecondAttributeName() => self::extractKeyValue($slave)])) {
 			/** @var ActiveRecord $model */
-			$model->delete();
+			if ($clearAfterPrimary) {
+				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
+					$event->data[0]->delete();
+				}, [$model]);
+			} else {
+				$model->delete();
+			}
 		}
 	}
 
@@ -239,47 +246,55 @@ trait RelationsTrait {
 	 * Удаляет связь между моделями в этом релейшене
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
+	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
 	 * @throws Throwable
 	 *
 	 * Функция не будет работать с объектами, не имеющими атрибута/ключа id (даже если в качестве primaryKey указан другой атрибут).
 	 * Такое поведение оставлено специально во избежание ошибок проектирования
-	 * @see Privileges::setDropUserRights
 	 *
 	 * Передавать массивы строк/идентификаторов нельзя (только массив моделей)
 	 * @noinspection NotOptimalIfConditionsInspection
 	 */
-	public static function unlinkModels($master, $slave):void {
+	public static function unlinkModels($master, $slave, bool $clearAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						self::unlinkModel($master_item, $slave_item);
+						self::unlinkModel($master_item, $slave_item, $clearAfterPrimary);
 					}
-				} else self::unlinkModel($master_item, $slave);
+				} else self::unlinkModel($master_item, $slave, $clearAfterPrimary);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				self::unlinkModel($master, $slave_item);
+				self::unlinkModel($master, $slave_item, $clearAfterPrimary);
 			}
-		} else self::unlinkModel($master, $slave);
+		} else self::unlinkModel($master, $slave, $clearAfterPrimary);
 	}
 
 	/**
 	 * Удаляет все связи от модели в этом релейшене
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
+	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
 	 * @throws Throwable
 	 */
-	public static function clearLinks($master):void {
+	public static function clearLinks($master, bool $clearAfterPrimary = true):void {
 		if (empty($master)) return;
 
 		if (is_array($master)) {
-			foreach ($master as $item) self::clearLinks($item);
+			foreach ($master as $item) self::clearLinks($item, $clearAfterPrimary);
 		}
 
 		foreach (static::findAll([self::getFirstAttributeName() => self::extractKeyValue($master)]) as $model) {
 			/** @var ActiveRecord $model */
-			$model->delete();
+			if ($clearAfterPrimary) {
+				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
+					$event->data[0]->delete();
+				}, [$model]);
+			} else {
+				$model->delete();
+			}
+
 		}
 	}
 }
