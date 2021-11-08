@@ -43,7 +43,7 @@ trait RelationsTrait {
 	 */
 	private static function getFirstAttributeName():string {
 		/** @var ActiveRecord $link */
-		$link = new self();
+		$link = new static();
 		return ArrayHelper::getValue($link->rules(), '0.0.0', new Exception('Не удалось получить атрибут для связи'));
 	}
 
@@ -53,45 +53,45 @@ trait RelationsTrait {
 	 */
 	private static function getSecondAttributeName():string {
 		/** @var ActiveRecord $link */
-		$link = new self();
+		$link = new static();
 		return ArrayHelper::getValue($link->rules(), '0.0.1', new Exception('Не удалось получить атрибут для связи'));
 	}
 
 	/**
 	 * Находит и возвращает существующую связь к базовой модели
 	 * @param ActiveRecord|int|string $master
-	 * @return self[]
+	 * @return static[]
 	 * @throws Throwable
 	 */
 	public static function currentLink($master):array {
 		if (empty($master)) return [];
-		return static::findAll([self::getFirstAttributeName() => self::extractKeyValue($master)]);
+		return static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]);
 	}
 
 	/**
 	 * Находит и возвращает существующую связь от базовой модели
 	 * @param ActiveRecord|int|string $slave
-	 * @return self[]
+	 * @return static[]
 	 * @throws Throwable
 	 */
 	public static function currentBackLink($slave):array {
 		if (empty($slave)) return [];
-		return static::findAll([self::getSecondAttributeName() => self::extractKeyValue($slave)]);
+		return static::findAll([static::getSecondAttributeName() => static::extractKeyValue($slave)]);
 	}
 
 	/**
 	 * Возвращает все связи к базовой модели
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
-	 * @return self[]
+	 * @return static[]
 	 * @throws Throwable
 	 */
 	public static function currentLinks($master):array {
 		$links = [[]];
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
-				$links[] = self::currentLink($master_item);
+				$links[] = static::currentLink($master_item);
 			}
-		} else $links[] = self::currentLink($master);
+		} else $links[] = static::currentLink($master);
 
 		return array_merge(...$links);
 	}
@@ -99,16 +99,16 @@ trait RelationsTrait {
 	/**
 	 * Возвращает все связи от базовой модели
 	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
-	 * @return self[]
+	 * @return static[]
 	 * @throws Throwable
 	 */
 	public static function currentBackLinks($slave):array {
 		$links = [[]];
 		if (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				$links[] = self::currentBackLink($slave_item);
+				$links[] = static::currentBackLink($slave_item);
 			}
-		} else $links[] = self::currentBackLink($slave);
+		} else $links[] = static::currentBackLink($slave);
 
 		return array_merge(...$links);
 	}
@@ -131,17 +131,17 @@ trait RelationsTrait {
 
 		if ($linkAfterPrimary) {//Связывание произойдёт после сохранения основной модели
 			$primaryItem->on($primaryItem->isNewRecord?BaseActiveRecord::EVENT_AFTER_INSERT:BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
-				self::linkModel($event->data[0], $event->data[1], $event->data[2]);
+				static::linkModel($event->data[0], $event->data[1], $event->data[2]);
 			}, [$master, $slave, $backLink]);
 		} else {
 			/** @var ActiveRecord $link */
-			$link = new self();
+			$link = new static();
 
-			$first_name = self::getFirstAttributeName();
-			$second_name = self::getSecondAttributeName();
+			$first_name = static::getFirstAttributeName();
+			$second_name = static::getSecondAttributeName();
 
-			$link->$first_name = self::extractKeyValue($master);
-			$link->$second_name = self::extractKeyValue($slave);
+			$link->$first_name = static::extractKeyValue($master);
+			$link->$second_name = static::extractKeyValue($slave);
 
 			$link->save();//save or update, whatever
 		}
@@ -159,22 +159,22 @@ trait RelationsTrait {
 	public static function linkModels($master, $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
 		/*Удалим разницу (она может быть полной при очистке)*/
-		self::dropDiffered($master, $slave, $backLink);
+		static::dropDiffered($master, $slave, $backLink);
 
 		if (empty($slave)) return;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						self::linkModel($master_item, $slave_item, $backLink, $linkAfterPrimary);
+						static::linkModel($master_item, $slave_item, $backLink, $linkAfterPrimary);
 					}
-				} else self::linkModel($master_item, $slave, $backLink, $linkAfterPrimary);
+				} else static::linkModel($master_item, $slave, $backLink, $linkAfterPrimary);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				self::linkModel($master, $slave_item, $backLink, $linkAfterPrimary);
+				static::linkModel($master, $slave_item, $backLink, $linkAfterPrimary);
 			}
-		} else self::linkModel($master, $slave, $backLink, $linkAfterPrimary);
+		} else static::linkModel($master, $slave, $backLink, $linkAfterPrimary);
 	}
 
 	/**
@@ -188,13 +188,13 @@ trait RelationsTrait {
 	 */
 	private static function dropDiffered($master, $slave, bool $backLink = false):void {
 		if ($backLink) {
-			$currentItems = self::currentBackLinks($slave);
+			$currentItems = static::currentBackLinks($slave);
 			$masterItemsKeys = [];
-			$first_name = self::getFirstAttributeName();
+			$first_name = static::getFirstAttributeName();
 			if (is_array($master)) {//вычисляем ключи моделей, к которым привязан линк
-				foreach ($master as $value) $masterItemsKeys[] = self::extractKeyValue($value);
+				foreach ($master as $value) $masterItemsKeys[] = static::extractKeyValue($value);
 			} else {
-				$masterItemsKeys[] = self::extractKeyValue($master);
+				$masterItemsKeys[] = static::extractKeyValue($master);
 			}
 			foreach ($currentItems as $item) {//все
 				if (!in_array($item->$first_name, $masterItemsKeys)) {
@@ -203,13 +203,13 @@ trait RelationsTrait {
 			}
 
 		} else {
-			$currentItems = self::currentLinks($master);
+			$currentItems = static::currentLinks($master);
 			$slaveItemsKeys = [];
-			$second_name = self::getSecondAttributeName();
+			$second_name = static::getSecondAttributeName();
 			if (is_array($slave)) {//вычисляем ключи линкованных моделей
-				foreach ($slave as $value) $slaveItemsKeys[] = self::extractKeyValue($value);
+				foreach ($slave as $value) $slaveItemsKeys[] = static::extractKeyValue($value);
 			} else {
-				$slaveItemsKeys[] = self::extractKeyValue($slave);
+				$slaveItemsKeys[] = static::extractKeyValue($slave);
 			}
 			foreach ($currentItems as $item) {//все
 				if (!in_array($item->$second_name, $slaveItemsKeys)) {
@@ -230,7 +230,7 @@ trait RelationsTrait {
 	public static function unlinkModel($master, $slave, bool $clearAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
 
-		if (null !== $model = static::findOne([self::getFirstAttributeName() => self::extractKeyValue($master), self::getSecondAttributeName() => self::extractKeyValue($slave)])) {
+		if (null !== $model = static::findOne([static::getFirstAttributeName() => static::extractKeyValue($master), static::getSecondAttributeName() => static::extractKeyValue($slave)])) {
 			/** @var ActiveRecord $model */
 			if ($clearAfterPrimary) {
 				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
@@ -261,15 +261,15 @@ trait RelationsTrait {
 			foreach ($master as $master_item) {
 				if (is_array($slave)) {
 					foreach ($slave as $slave_item) {
-						self::unlinkModel($master_item, $slave_item, $clearAfterPrimary);
+						static::unlinkModel($master_item, $slave_item, $clearAfterPrimary);
 					}
-				} else self::unlinkModel($master_item, $slave, $clearAfterPrimary);
+				} else static::unlinkModel($master_item, $slave, $clearAfterPrimary);
 			}
 		} elseif (is_array($slave)) {
 			foreach ($slave as $slave_item) {
-				self::unlinkModel($master, $slave_item, $clearAfterPrimary);
+				static::unlinkModel($master, $slave_item, $clearAfterPrimary);
 			}
-		} else self::unlinkModel($master, $slave, $clearAfterPrimary);
+		} else static::unlinkModel($master, $slave, $clearAfterPrimary);
 	}
 
 	/**
@@ -282,10 +282,10 @@ trait RelationsTrait {
 		if (empty($master)) return;
 
 		if (is_array($master)) {
-			foreach ($master as $item) self::clearLinks($item, $clearAfterPrimary);
+			foreach ($master as $item) static::clearLinks($item, $clearAfterPrimary);
 		}
 
-		foreach (static::findAll([self::getFirstAttributeName() => self::extractKeyValue($master)]) as $model) {
+		foreach (static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]) as $model) {
 			/** @var ActiveRecord $model */
 			if ($clearAfterPrimary) {
 				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
