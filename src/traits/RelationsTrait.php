@@ -134,16 +134,19 @@ trait RelationsTrait {
 				static::linkModel($event->data[0], $event->data[1], $event->data[2]);
 			}, [$master, $slave, $backLink]);
 		} else {
-			/** @var ActiveRecord $link */
-			$link = new static();
-
 			$first_name = static::getFirstAttributeName();
 			$second_name = static::getSecondAttributeName();
+			$first_value = static::extractKeyValue($master);
+			$second_value = static::extractKeyValue($slave);
 
-			$link->$first_name = static::extractKeyValue($master);
-			$link->$second_name = static::extractKeyValue($slave);
-
-			$link->save();//save or update, whatever
+			/*Если связь уже существует - не сохраняем (чтобы избежать валидации и неизбежной ошибки уникальной записи)*/
+			if (null === static::findOne([$first_name => $first_value, $second_name => $second_value])) {
+				/** @var ActiveRecord $link */
+				$link = new static();
+				$link->$first_name = $first_value;
+				$link->$second_name = $second_value;
+				$link->save();
+			}
 		}
 	}
 
