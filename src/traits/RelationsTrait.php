@@ -131,7 +131,7 @@ trait RelationsTrait {
 
 		if ($linkAfterPrimary) {//Связывание произойдёт после сохранения основной модели
 			$primaryItem->on($primaryItem->isNewRecord?BaseActiveRecord::EVENT_AFTER_INSERT:BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
-				static::linkModel($event->data[0], $event->data[1], $event->data[2]);
+				static::linkModel($event->data[0], $event->data[1], $event->data[2], false);
 			}, [$master, $slave, $backLink]);
 		} else {
 			$first_name = static::getFirstAttributeName();
