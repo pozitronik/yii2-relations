@@ -4,12 +4,14 @@ declare(strict_types = 1);
 namespace pozitronik\relations\traits;
 
 use pozitronik\helpers\ArrayHelper;
+use pozitronik\relations\models\RelationException;
 use Throwable;
 use yii\base\Event;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use yii\db\ActiveRecord;
 use yii\db\BaseActiveRecord;
+use yii\db\StaleObjectException;
 
 /**
  * Trait Relations
@@ -131,7 +133,21 @@ trait RelationsTrait {
 			$link = new static();
 			$link->$first_name = $first_value;
 			$link->$second_name = $second_value;
-			$link->save();
+			if (false === $link->save()) {
+				throw new RelationException("Relation save error.");
+			}
+		}
+	}
+
+	/**
+	 * @param RelationsTrait|ActiveRecord $link
+	 * @throws RelationException
+	 * @throws Throwable
+	 * @throws StaleObjectException
+	 */
+	private static function deleteLink(self $link):void {
+		if (false === $link->delete()) {
+			throw new RelationException("Relation delete error.");
 		}
 	}
 
@@ -247,10 +263,10 @@ trait RelationsTrait {
 			/** @var ActiveRecord $link */
 			if ($clearAfterPrimary) {
 				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
-					$event->data[0]->delete();
+					static::deleteLink($event->data[0]);
 				}, [$link]);
 			} else {
-				$link->delete();
+				static::deleteLink($link);
 			}
 		}
 	}
@@ -302,10 +318,10 @@ trait RelationsTrait {
 			/** @var ActiveRecord $link */
 			if ($clearAfterPrimary) {
 				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
-					$event->data[0]->delete();
+					static::deleteLink($event->data[0]);
 				}, [$link]);
 			} else {
-				$link->delete();
+				static::deleteLink($link);
 			}
 
 		}
