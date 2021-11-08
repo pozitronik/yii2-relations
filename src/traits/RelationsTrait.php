@@ -233,14 +233,14 @@ trait RelationsTrait {
 	public static function unlinkModel($master, $slave, bool $clearAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
 
-		if (null !== $model = static::findOne([static::getFirstAttributeName() => static::extractKeyValue($master), static::getSecondAttributeName() => static::extractKeyValue($slave)])) {
-			/** @var ActiveRecord $model */
+		if (null !== $link = static::findOne([static::getFirstAttributeName() => static::extractKeyValue($master), static::getSecondAttributeName() => static::extractKeyValue($slave)])) {
+			/** @var ActiveRecord $link */
 			if ($clearAfterPrimary) {
 				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
 					$event->data[0]->delete();
-				}, [$model]);
+				}, [$link]);
 			} else {
-				$model->delete();
+				$link->delete();
 			}
 		}
 	}
@@ -288,14 +288,14 @@ trait RelationsTrait {
 			foreach ($master as $item) static::clearLinks($item, $clearAfterPrimary);
 		}
 
-		foreach (static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]) as $model) {
-			/** @var ActiveRecord $model */
+		foreach (static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]) as $link) {
+			/** @var ActiveRecord $link */
 			if ($clearAfterPrimary) {
 				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
 					$event->data[0]->delete();
-				}, [$model]);
+				}, [$link]);
 			} else {
-				$model->delete();
+				$link->delete();
 			}
 
 		}
