@@ -114,6 +114,28 @@ trait RelationsTrait {
 	}
 
 	/**
+	 * @param ActiveRecord|int|string $master
+	 * @param ActiveRecord|int|string $slave
+	 * @throws InvalidConfigException
+	 * @throws Throwable
+	 */
+	private static function setLink($master, $slave):void {
+		$first_name = static::getFirstAttributeName();
+		$second_name = static::getSecondAttributeName();
+		$first_value = static::extractKeyValue($master);
+		$second_value = static::extractKeyValue($slave);
+
+		/*Если связь уже существует - не сохраняем (чтобы избежать валидации и неизбежной ошибки уникальной записи)*/
+		if (null === static::findOne([$first_name => $first_value, $second_name => $second_value])) {
+			/** @var ActiveRecord $link */
+			$link = new static();
+			$link->$first_name = $first_value;
+			$link->$second_name = $second_value;
+			$link->save();
+		}
+	}
+
+	/**
 	 * Линкует в этом релейшене две модели. Модели могут быть заданы как через айдишники, так и моделью, и ещё тупо строкой
 	 * @param ActiveRecord|int|string $master
 	 * @param ActiveRecord|int|string $slave
@@ -131,22 +153,10 @@ trait RelationsTrait {
 
 		if ($linkAfterPrimary) {//Связывание произойдёт после сохранения основной модели
 			$primaryItem->on($primaryItem->isNewRecord?BaseActiveRecord::EVENT_AFTER_INSERT:BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
-				static::linkModel($event->data[0], $event->data[1], $event->data[2], false);
-			}, [$master, $slave, $backLink]);
+				static::setLink($event->data[0], $event->data[1]);
+			}, [$master, $slave]);
 		} else {
-			$first_name = static::getFirstAttributeName();
-			$second_name = static::getSecondAttributeName();
-			$first_value = static::extractKeyValue($master);
-			$second_value = static::extractKeyValue($slave);
-
-			/*Если связь уже существует - не сохраняем (чтобы избежать валидации и неизбежной ошибки уникальной записи)*/
-			if (null === static::findOne([$first_name => $first_value, $second_name => $second_value])) {
-				/** @var ActiveRecord $link */
-				$link = new static();
-				$link->$first_name = $first_value;
-				$link->$second_name = $second_value;
-				$link->save();
-			}
+			static::setLink($master, $slave);
 		}
 	}
 
