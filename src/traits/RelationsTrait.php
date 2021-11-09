@@ -188,7 +188,7 @@ trait RelationsTrait {
 	public static function linkModels($master, $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
 		/*Удалим разницу (она может быть полной при очистке)*/
-		static::dropDiffered($master, $slave, $backLink);
+		static::dropDiffered($master, $slave, $backLink, $linkAfterPrimary);
 
 		if (empty($slave)) return;
 		if (is_array($master)) {
@@ -211,11 +211,12 @@ trait RelationsTrait {
 	 * @param $master
 	 * @param $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
+	 * @param bool $dropAfterPrimary Удаление произойдёт только после сохранения основной модели
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 * @noinspection TypeUnsafeArraySearchInspection
 	 */
-	private static function dropDiffered($master, $slave, bool $backLink = false):void {
+	private static function dropDiffered($master, $slave, bool $backLink = false, bool $dropAfterPrimary = true):void {
 		if ($backLink) {
 			$currentItems = static::currentBackLinks($slave);
 			$masterItemsKeys = [];
@@ -227,7 +228,7 @@ trait RelationsTrait {
 			}
 			foreach ($currentItems as $item) {//все
 				if (!in_array($item->$first_name, $masterItemsKeys)) {
-					$item::unlinkModel($item->$first_name, $slave);
+					$item::unlinkModel($item->$first_name, $slave, $dropAfterPrimary);
 				}
 			}
 
@@ -242,7 +243,7 @@ trait RelationsTrait {
 			}
 			foreach ($currentItems as $item) {//все
 				if (!in_array($item->$second_name, $slaveItemsKeys)) {
-					$item::unlinkModel($master, $item->$second_name);
+					$item::unlinkModel($master, $item->$second_name, $dropAfterPrimary);
 				}
 			}
 		}
