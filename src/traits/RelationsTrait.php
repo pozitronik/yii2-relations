@@ -183,7 +183,6 @@ trait RelationsTrait {
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
 	 * @param bool $linkAfterPrimary Связывание произойдёт только после сохранения основной модели
 	 * @throws Throwable
-	 * @noinspection NotOptimalIfConditionsInspection
 	 */
 	public static function linkModels(array|int|string|ActiveRecord $master, array|int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
@@ -283,7 +282,6 @@ trait RelationsTrait {
 	 * Такое поведение оставлено специально во избежание ошибок проектирования
 	 *
 	 * Передавать массивы строк/идентификаторов нельзя (только массив моделей)
-	 * @noinspection NotOptimalIfConditionsInspection
 	 */
 	public static function unlinkModels(array|int|string|ActiveRecord $master, array|int|string|ActiveRecord $slave, bool $clearAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
