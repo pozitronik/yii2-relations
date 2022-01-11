@@ -12,7 +12,7 @@ class RelationException extends Exception {
 	/**
 	 * @inheritDoc
 	 */
-	public function getName() {
+	public function getName():string {
 		return 'Relation exception';
 	}
 
