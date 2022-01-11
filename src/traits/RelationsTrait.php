@@ -140,12 +140,12 @@ trait RelationsTrait {
 	}
 
 	/**
-	 * @param RelationsTrait|ActiveRecord $link
+	 * @param self|ActiveRecord $link
 	 * @throws RelationException
 	 * @throws Throwable
 	 * @throws StaleObjectException
 	 */
-	private static function deleteLink(self $link):void {
+	private static function deleteLink(ActiveRecord|self $link):void {
 		if (false === $link->delete()) {
 			throw new RelationException("Relation delete error.");
 		}
