@@ -33,7 +33,7 @@ trait RelationsTrait {
 	 * @throws Throwable
 	 * @throws InvalidConfigException
 	 */
-	private static function extractKeyValue($storage) {
+	private static function extractKeyValue(int|string|ActiveRecord $storage) {
 		if (is_numeric($storage)) return (int)$storage;
 		if (is_object($storage)) return ArrayHelper::getValue($storage, 'primaryKey', new Exception("Класс {$storage->formName()} не имеет атрибута primaryKey"));
 		return (string)$storage; //suppose it string field name
@@ -61,33 +61,33 @@ trait RelationsTrait {
 
 	/**
 	 * Находит и возвращает существующую связь к базовой модели
-	 * @param ActiveRecord|int|string $master
+	 * @param int|string|ActiveRecord $master
 	 * @return static[]
 	 * @throws Throwable
 	 */
-	public static function currentLink($master):array {
+	public static function currentLink(int|string|ActiveRecord $master):array {
 		if (empty($master)) return [];
 		return static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]);
 	}
 
 	/**
 	 * Находит и возвращает существующую связь от базовой модели
-	 * @param ActiveRecord|int|string $slave
+	 * @param int|string|ActiveRecord $slave
 	 * @return static[]
 	 * @throws Throwable
 	 */
-	public static function currentBackLink($slave):array {
+	public static function currentBackLink(int|string|ActiveRecord $slave):array {
 		if (empty($slave)) return [];
 		return static::findAll([static::getSecondAttributeName() => static::extractKeyValue($slave)]);
 	}
 
 	/**
 	 * Возвращает все связи к базовой модели
-	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
+	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $master
 	 * @return static[]
 	 * @throws Throwable
 	 */
-	public static function currentLinks($master):array {
+	public static function currentLinks(array|int|string|ActiveRecord $master):array {
 		$links = [[]];
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
@@ -100,11 +100,11 @@ trait RelationsTrait {
 
 	/**
 	 * Возвращает все связи от базовой модели
-	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
+	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $slave
 	 * @return static[]
 	 * @throws Throwable
 	 */
-	public static function currentBackLinks($slave):array {
+	public static function currentBackLinks(array|int|string|ActiveRecord $slave):array {
 		$links = [[]];
 		if (is_array($slave)) {
 			foreach ($slave as $slave_item) {
@@ -116,12 +116,12 @@ trait RelationsTrait {
 	}
 
 	/**
-	 * @param ActiveRecord|int|string $master
-	 * @param ActiveRecord|int|string $slave
+	 * @param int|string|ActiveRecord $master
+	 * @param int|string|ActiveRecord $slave
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
-	private static function setLink($master, $slave):void {
+	private static function setLink(int|string|ActiveRecord $master, int|string|ActiveRecord $slave):void {
 		$first_name = static::getFirstAttributeName();
 		$second_name = static::getSecondAttributeName();
 		$first_value = static::extractKeyValue($master);
@@ -153,14 +153,14 @@ trait RelationsTrait {
 
 	/**
 	 * Линкует в этом релейшене две модели. Модели могут быть заданы как через айдишники, так и моделью, и ещё тупо строкой
-	 * @param ActiveRecord|int|string $master
-	 * @param ActiveRecord|int|string $slave
+	 * @param int|string|ActiveRecord $master
+	 * @param int|string|ActiveRecord $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
 	 * @param bool $linkAfterPrimary Связывание произойдёт только после сохранения основной модели
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
-	public static function linkModel($master, $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
+	public static function linkModel(int|string|ActiveRecord $master, int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
 		/*Определяем модель, являющуюся в этой связи основной*/
 		$primaryItem = $backLink?$slave:$master;
@@ -178,14 +178,14 @@ trait RelationsTrait {
 
 	/**
 	 * Линкует в этом релейшене две модели. Модели могут быть заданы как через айдишники, так и напрямую, в виде массивов или так.
-	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
-	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
+	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $master
+	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
 	 * @param bool $linkAfterPrimary Связывание произойдёт только после сохранения основной модели
 	 * @throws Throwable
 	 * @noinspection NotOptimalIfConditionsInspection
 	 */
-	public static function linkModels($master, $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
+	public static function linkModels(array|int|string|ActiveRecord $master, array|int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
 		/*Удалим разницу (она может быть полной при очистке)*/
 		static::dropDiffered($master, $slave, $backLink, $linkAfterPrimary);
@@ -252,12 +252,12 @@ trait RelationsTrait {
 
 	/**
 	 * Удаляет единичную связь в этом релейшене
-	 * @param ActiveRecord|int|string $master
-	 * @param ActiveRecord|int|string $slave
+	 * @param int|string|ActiveRecord $master
+	 * @param int|string|ActiveRecord $slave
 	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
 	 * @throws Throwable
 	 */
-	public static function unlinkModel($master, $slave, bool $clearAfterPrimary = true):void {
+	public static function unlinkModel(int|string|ActiveRecord $master, int|string|ActiveRecord $slave, bool $clearAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
 
 		if (null !== $link = static::findOne([static::getFirstAttributeName() => static::extractKeyValue($master), static::getSecondAttributeName() => static::extractKeyValue($slave)])) {
@@ -274,8 +274,8 @@ trait RelationsTrait {
 
 	/**
 	 * Удаляет связь между моделями в этом релейшене
-	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
-	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $slave
+	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $master
+	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $slave
 	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
 	 * @throws Throwable
 	 *
@@ -285,7 +285,7 @@ trait RelationsTrait {
 	 * Передавать массивы строк/идентификаторов нельзя (только массив моделей)
 	 * @noinspection NotOptimalIfConditionsInspection
 	 */
-	public static function unlinkModels($master, $slave, bool $clearAfterPrimary = true):void {
+	public static function unlinkModels(array|int|string|ActiveRecord $master, array|int|string|ActiveRecord $slave, bool $clearAfterPrimary = true):void {
 		if (empty($master) || empty($slave)) return;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
@@ -304,11 +304,11 @@ trait RelationsTrait {
 
 	/**
 	 * Удаляет все связи от модели в этом релейшене
-	 * @param int|int[]|string|string[]|ActiveRecord|ActiveRecord[] $master
+	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $master
 	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
 	 * @throws Throwable
 	 */
-	public static function clearLinks($master, bool $clearAfterPrimary = true):void {
+	public static function clearLinks(array|int|string|ActiveRecord $master, bool $clearAfterPrimary = true):void {
 		if (empty($master)) return;
 
 		if (is_array($master)) {
