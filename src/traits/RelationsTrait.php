@@ -6,6 +6,7 @@ namespace pozitronik\relations\traits;
 use pozitronik\helpers\ArrayHelper;
 use pozitronik\relations\models\RelationException;
 use Throwable;
+use Yii;
 use yii\base\Event;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
@@ -25,6 +26,21 @@ use yii\db\StaleObjectException;
  * @see ActiveRecord::findOne()
  */
 trait RelationsTrait {
+	private static ?bool $_modeAfterPrimary = null;
+
+	/**
+	 * Получение режима операций со связанными моделями:
+	 * true: операции будут выполняться после сохранения изменений основной модели,
+	 * false: в момент изменения свойства.
+	 * Настройка задаётся глобально в конфигурации приложения в components.relations.afterPrimaryMode, либо может быть
+	 * переопределена непосредственно для каждой операции через соответствующий параметр.
+	 * @param bool|null $mode null: получить глобальную конфигурацию, иначе переопределённую
+	 * @return bool
+	 * @throws Throwable
+	 */
+	public static function getAfterPrimaryMode(?bool $mode = null):bool {
+		return $mode??(self::$_modeAfterPrimary ??= ArrayHelper::getValue(Yii::$app->components, 'relations.afterPrimaryMode', false));
+	}
 
 	/**
 	 * Преобразует переданный параметр к единому виду
@@ -156,16 +172,17 @@ trait RelationsTrait {
 	 * @param int|string|ActiveRecord $master
 	 * @param int|string|ActiveRecord $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
-	 * @param bool $linkAfterPrimary Связывание произойдёт только после сохранения основной модели
+	 * @param null|bool $linkAfterPrimary true: связывание произойдёт только после сохранения основной модели, false: в момент присвоения свойства, null: глобальная настройка
+	 * Для новых ActiveRecord моделей связывание всегда происходит после сохранения.
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
-	public static function linkModel(int|string|ActiveRecord $master, int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = false):void {
+	public static function linkModel(int|string|ActiveRecord $master, int|string|ActiveRecord $slave, bool $backLink = false, ?bool $linkAfterPrimary = null):void {
 		if (empty($master) || empty($slave)) return;
 		/*Определяем модель, являющуюся в этой связи основной*/
 		$primaryItem = $backLink?$slave:$master;
 		/*Связывание отложено, либо пришёл запрос на связывание ActiveRecord-модели, ещё не имеющей primary key*/
-		$linkAfterPrimary = $linkAfterPrimary || (is_subclass_of($primaryItem, ActiveRecord::class, false) && $primaryItem->isNewRecord);
+		$linkAfterPrimary = static::getAfterPrimaryMode($linkAfterPrimary) || (is_subclass_of($primaryItem, ActiveRecord::class, false) && $primaryItem->isNewRecord);
 
 		if ($linkAfterPrimary) {//Связывание произойдёт после сохранения основной модели
 			$primaryItem->on($primaryItem->isNewRecord?BaseActiveRecord::EVENT_AFTER_INSERT:BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
@@ -181,10 +198,10 @@ trait RelationsTrait {
 	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $master
 	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
-	 * @param bool $linkAfterPrimary Связывание произойдёт только после сохранения основной модели
+	 * @param null|bool $linkAfterPrimary true: связывание произойдёт только после сохранения основной модели, false: в момент присвоения свойства, null: глобальная настройка
 	 * @throws Throwable
 	 */
-	public static function linkModels(array|int|string|ActiveRecord $master, array|int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = false):void {
+	public static function linkModels(array|int|string|ActiveRecord $master, array|int|string|ActiveRecord $slave, bool $backLink = false, ?bool $linkAfterPrimary = null):void {
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
 		/*Удалим разницу (она может быть полной при очистке)*/
 		static::dropDiffered($master, $slave, $backLink, $linkAfterPrimary);
@@ -210,12 +227,12 @@ trait RelationsTrait {
 	 * @param $master
 	 * @param $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
-	 * @param bool $dropAfterPrimary Удаление произойдёт только после сохранения основной модели
+	 * @param null|bool $dropAfterPrimary true: удаление произойдёт только после сохранения основной модели, false: в момент изменения свойства, null: глобальная настройка
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 * @noinspection TypeUnsafeArraySearchInspection
 	 */
-	private static function dropDiffered($master, $slave, bool $backLink = false, bool $dropAfterPrimary = false):void {
+	private static function dropDiffered($master, $slave, bool $backLink = false, ?bool $dropAfterPrimary = false):void {
 		if ($backLink) {
 			$currentItems = static::currentBackLinks($slave);
 			$masterItemsKeys = [];
@@ -253,15 +270,15 @@ trait RelationsTrait {
 	 * Удаляет единичную связь в этом релейшене
 	 * @param int|string|ActiveRecord $master
 	 * @param int|string|ActiveRecord $slave
-	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
+	 * @param null|bool $clearAfterPrimary true: удаление произойдёт только после сохранения основной модели, false: в момент изменения свойства, null: глобальная настройка
 	 * @throws Throwable
 	 */
-	public static function unlinkModel(int|string|ActiveRecord $master, int|string|ActiveRecord $slave, bool $clearAfterPrimary = true):void {
+	public static function unlinkModel(int|string|ActiveRecord $master, int|string|ActiveRecord $slave, ?bool $clearAfterPrimary = null):void {
 		if (empty($master) || empty($slave)) return;
 
 		if (null !== $link = static::findOne([static::getFirstAttributeName() => static::extractKeyValue($master), static::getSecondAttributeName() => static::extractKeyValue($slave)])) {
 			/** @var ActiveRecord $link */
-			if ($clearAfterPrimary) {
+			if (static::getAfterPrimaryMode($clearAfterPrimary)) {
 				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
 					static::deleteLink($event->data[0]);
 				}, [$link]);
@@ -275,7 +292,7 @@ trait RelationsTrait {
 	 * Удаляет связь между моделями в этом релейшене
 	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $master
 	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $slave
-	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
+	 * @param null|bool $clearAfterPrimary true: удаление произойдёт только после сохранения основной модели, false: в момент присвоения свойства, null: глобальная настройка
 	 * @throws Throwable
 	 *
 	 * Функция не будет работать с объектами, не имеющими атрибута/ключа id (даже если в качестве primaryKey указан другой атрибут).
@@ -303,7 +320,7 @@ trait RelationsTrait {
 	/**
 	 * Удаляет все связи от модели в этом релейшене
 	 * @param int|string|ActiveRecord|ActiveRecord[]|int[]|string[] $master
-	 * @param bool $clearAfterPrimary Удаление произойдёт только после сохранения основной модели.
+	 * @param null|bool $clearAfterPrimary true: удаление произойдёт только после сохранения основной модели, false: в момент изменения свойства, null: глобальная настройка
 	 * @throws Throwable
 	 */
 	public static function clearLinks(array|int|string|ActiveRecord $master, bool $clearAfterPrimary = true):void {
