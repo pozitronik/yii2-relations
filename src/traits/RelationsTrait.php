@@ -160,7 +160,7 @@ trait RelationsTrait {
 	 * @throws InvalidConfigException
 	 * @throws Throwable
 	 */
-	public static function linkModel(int|string|ActiveRecord $master, int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
+	public static function linkModel(int|string|ActiveRecord $master, int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = false):void {
 		if (empty($master) || empty($slave)) return;
 		/*Определяем модель, являющуюся в этой связи основной*/
 		$primaryItem = $backLink?$slave:$master;
@@ -184,7 +184,7 @@ trait RelationsTrait {
 	 * @param bool $linkAfterPrimary Связывание произойдёт только после сохранения основной модели
 	 * @throws Throwable
 	 */
-	public static function linkModels(array|int|string|ActiveRecord $master, array|int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = true):void {
+	public static function linkModels(array|int|string|ActiveRecord $master, array|int|string|ActiveRecord $slave, bool $backLink = false, bool $linkAfterPrimary = false):void {
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
 		/*Удалим разницу (она может быть полной при очистке)*/
 		static::dropDiffered($master, $slave, $backLink, $linkAfterPrimary);
@@ -215,7 +215,7 @@ trait RelationsTrait {
 	 * @throws Throwable
 	 * @noinspection TypeUnsafeArraySearchInspection
 	 */
-	private static function dropDiffered($master, $slave, bool $backLink = false, bool $dropAfterPrimary = true):void {
+	private static function dropDiffered($master, $slave, bool $backLink = false, bool $dropAfterPrimary = false):void {
 		if ($backLink) {
 			$currentItems = static::currentBackLinks($slave);
 			$masterItemsKeys = [];
