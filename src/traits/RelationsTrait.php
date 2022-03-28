@@ -185,9 +185,7 @@ trait RelationsTrait {
 		$linkAfterPrimary = static::getAfterPrimaryMode($linkAfterPrimary) || (is_subclass_of($primaryItem, ActiveRecord::class, false) && $primaryItem->isNewRecord);
 
 		if ($linkAfterPrimary) {//Связывание произойдёт после сохранения основной модели
-			$primaryItem->on($primaryItem->isNewRecord?BaseActiveRecord::EVENT_AFTER_INSERT:BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
-				static::setLink($event->data[0], $event->data[1]);
-			}, [$master, $slave]);
+			$primaryItem->on($primaryItem->isNewRecord?BaseActiveRecord::EVENT_AFTER_INSERT:BaseActiveRecord::EVENT_AFTER_UPDATE, [__CLASS__, 'setLinkHandler'], [$master, $slave]);//see setLinkHandler()
 		} else {
 			static::setLink($master, $slave);
 		}
@@ -279,9 +277,7 @@ trait RelationsTrait {
 		if (null !== $link = static::findOne([static::getFirstAttributeName() => static::extractKeyValue($master), static::getSecondAttributeName() => static::extractKeyValue($slave)])) {
 			/** @var ActiveRecord $link */
 			if (static::getAfterPrimaryMode($clearAfterPrimary)) {
-				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
-					static::deleteLink($event->data[0]);
-				}, [$link]);
+				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, [__CLASS__, 'deleteLinkHandler'], [$link]);//see deleteLinkHandler()
 			} else {
 				static::deleteLink($link);
 			}
@@ -333,13 +329,37 @@ trait RelationsTrait {
 		foreach (static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]) as $link) {
 			/** @var ActiveRecord $link */
 			if ($clearAfterPrimary) {
-				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, function(Event $event) {
-					static::deleteLink($event->data[0]);
-				}, [$link]);
+				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, [__CLASS__, 'deleteLinkHandler'], [$link]);//see deleteLinkHandler()
 			} else {
 				static::deleteLink($link);
 			}
-
 		}
+	}
+
+	/**
+	 * Метод нужен для однократного срабатывания присвоения связи после сохранения основной модели:
+	 * событие удаляется после первого вызова. Если этого не делать, то повторные сохранения основной модели
+	 * будут вызывать всю цепочку присвоений.
+	 * @param Event $event
+	 * @return void
+	 * @throws InvalidConfigException
+	 * @throws Throwable
+	 */
+	protected static function setLinkHandler(Event $event):void {
+		static::setLink($event->data[0], $event->data[1]);
+		$event->sender->off($event->name, [__CLASS__, 'setLinkHandler']);
+	}
+
+	/**
+	 * Метод нужен для однократного срабатывания удаления связи после сохранения основной модели.
+	 * @param Event $event
+	 * @return void
+	 * @throws RelationException
+	 * @throws StaleObjectException
+	 * @throws Throwable
+	 */
+	protected static function deleteLinkHandler(Event $event):void {
+		static::deleteLink($event->data[0]);
+		$event->sender->off($event->name, [__CLASS__, 'deleteLinkHandler']);
 	}
 }
