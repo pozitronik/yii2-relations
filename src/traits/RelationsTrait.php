@@ -231,8 +231,8 @@ trait RelationsTrait {
 	 * @noinspection TypeUnsafeArraySearchInspection
 	 */
 	private static function dropDiffered(null|array|int|string|ActiveRecord $master, null|array|int|string|ActiveRecord $slave, bool $backLink = false, ?bool $dropAfterPrimary = false):void {
+		if (empty($master) || empty($slave)) return;
 		if ($backLink) {
-			if (empty($slave)) return;
 			$currentItems = static::currentBackLinks($slave);
 			$masterItemsKeys = [];
 			$first_name = static::getFirstAttributeName();
@@ -248,7 +248,6 @@ trait RelationsTrait {
 			}
 
 		} else {
-			if (empty($master)) return;
 			$currentItems = static::currentLinks($master);
 			$slaveItemsKeys = [];
 			$second_name = static::getSecondAttributeName();
