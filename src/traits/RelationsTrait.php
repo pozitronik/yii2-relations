@@ -150,7 +150,7 @@ trait RelationsTrait {
 			$link->$first_name = $first_value;
 			$link->$second_name = $second_value;
 			if (false === $link->save()) {
-				throw new RelationException("Relation save error.");
+				throw new RelationException("Relation save error: ", $link);
 			}
 		}
 	}
@@ -163,7 +163,7 @@ trait RelationsTrait {
 	 */
 	private static function deleteLink(ActiveRecord|self $link):void {
 		if (false === $link->delete()) {
-			throw new RelationException("Relation delete error.");
+			throw new RelationException("Relation delete error: ", $link);
 		}
 	}
 
