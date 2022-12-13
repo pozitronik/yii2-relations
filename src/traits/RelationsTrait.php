@@ -222,8 +222,8 @@ trait RelationsTrait {
 
 	/**
 	 * Вычисляет разницу между текущими и задаваемыми связями, удаляя те элементы, которые есть в текущей связи, но отсутствуют в устанавливаемой
-	 * @param null|array|int|string|ActiveRecord
-	 * @param null|array|int|string|ActiveRecord
+	 * @param null|array|int|string|ActiveRecord $master
+	 * @param null|array|int|string|ActiveRecord $slave
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
 	 * @param null|bool $dropAfterPrimary true: удаление произойдёт только после сохранения основной модели, false: в момент изменения свойства, null: глобальная настройка
 	 * @throws InvalidConfigException
