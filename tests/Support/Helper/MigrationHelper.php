@@ -21,4 +21,15 @@ class MigrationHelper {
 		$migrationController->interactive = false;
 		$migrationController->runAction('up');
 	}
+
+	/**
+	 * @return void
+	 * @throws Exception
+	 * @throws InvalidRouteException
+	 */
+	public static function migrateFresh():void {
+		$migrationController = new MigrateController('migrations', \Yii::$app);
+		$migrationController->interactive = false;
+		$migrationController->runAction('fresh');
+	}
 }
