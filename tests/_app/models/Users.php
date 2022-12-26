@@ -16,6 +16,8 @@ use yii\web\IdentityInterface;
  * @property string $login Логин
  * @property string $password Хеш пароля либо сам пароль (если $salt пустой)
  * @property-read string $authKey @see [[yii\web\IdentityInterface::getAuthKey()]]
+ * @property-read RelUsersToBooks $relUsersToBooks
+ * @property Books[] $relatedBooks
  */
 class Users extends ActiveRecord implements IdentityInterface {
 
@@ -107,4 +109,34 @@ class Users extends ActiveRecord implements IdentityInterface {
 		$this->refresh();
 		return $this;
 	}
+
+	/**
+	 * @return RelUsersToBooks
+	 */
+	public function getRelUsersToBooks():RelUsersToBooks {
+		return $this->hasMany(RelUsersToBooks::class, ['user_id' => 'id']);
+	}
+
+	/**
+	 * @return Books[]
+	 */
+	public function getRelatedBooks():array {
+		return $this->hasMany(Books::class, ['id' => 'book_id'])->via('relUsersToBooks');
+	}
+
+	/**
+	 * @param mixed $relatedBooks
+	 */
+	public function setRelatedBooks(mixed $relatedBooks):void {
+		RelUsersToBooks::linkModels($this, $relatedBooks);
+	}
+
+	/**
+	 * @inheritDoc
+	 */
+	public function beforeDelete():void {
+		RelUsersToBooks::unlinkModels($this, $this->relUsersToBooks);
+		parent::beforeDelete();
+	}
+
 }
