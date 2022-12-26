@@ -15,6 +15,7 @@ class RelationException extends Exception {
 
 	/**
 	 * @param string $message
+	 * @param Model|null $relation
 	 * @param int $code
 	 * @param Throwable|null $previous
 	 */
