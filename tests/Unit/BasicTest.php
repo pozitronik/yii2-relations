@@ -8,6 +8,7 @@ use app\fixtures\UsersFixture;
 use app\models\Books;
 use app\models\Users;
 use Codeception\Test\Unit;
+use Tests\Support\Helper\MigrationHelper;
 use Tests\Support\UnitTester;
 
 /**
@@ -18,18 +19,10 @@ class BasicTest extends Unit {
 	protected UnitTester $tester;
 
 	/**
-	 * @inheritDoc
-	 */
-	protected function _before():void {
-		$this->tester->migrate();
-		$this->tester->grabFixture('users');
-		$this->tester->grabFixture('books');
-	}
-
-	/**
 	 * @return string[]
 	 */
 	public function _fixtures() {
+		MigrationHelper::migrate();
 		return [
 			'users' => UsersFixture::class,
 			'books' => BooksFixture::class

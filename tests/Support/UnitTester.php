@@ -5,10 +5,6 @@ declare(strict_types = 1);
 namespace Tests\Support;
 
 use Codeception\Actor;
-use Yii;
-use yii\base\InvalidRouteException;
-use yii\console\controllers\MigrateController;
-use yii\console\Exception;
 
 /**
  * Inherited Methods
@@ -27,16 +23,4 @@ use yii\console\Exception;
  */
 class UnitTester extends Actor {
 	use _generated\UnitTesterActions;
-
-	/**
-	 * Applies all test app migrations (assume calling this method before tests)
-	 * @return void
-	 * @throws InvalidRouteException
-	 * @throws Exception
-	 */
-	public function migrate():void {
-		$migrationController = new MigrateController('migrations', Yii::$app);
-		$migrationController->interactive = false;
-		$migrationController->runAction('up');
-	}
 }
