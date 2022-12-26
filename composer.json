@@ -1,47 +1,50 @@
 {
-    "name": "pozitronik/yii2-relations",
-    "description": "Relational attributes support for YII2 ActiveRecord",
-    "type": "yii2-extension",
-    "keywords": [
-        "yii2",
-        "activerecord",
-        "trait",
-        "relation"
-    ],
-    "license": "GPL-3.0",
-    "authors": [
-        {
-            "name": "Pavel Dubrovsky",
-            "email": "antikillerxxl@gmail.com"
-        }
-    ],
-    "minimum-stability": "dev",
-    "require": {
-        "php": ">=8.0",
-        "pozitronik/yii2-helpers": "^1.0.0"
-    },
-    "require-dev": {
-        "yiisoft/yii2": "dev-master",
-        "codeception/codeception": "5.0.x-dev",
-        "codeception/module-asserts": "*"
-    },
-    "autoload": {
-        "psr-4": {
-            "pozitronik\\relations\\": "src"
-        }
-    },
-    "config": {
-        "fxp-asset": {
-            "enabled": false
-        },
-        "allow-plugins": {
-            "yiisoft/yii2-composer": true
-        }
-    },
-    "repositories": [
-        {
-            "type": "composer",
-            "url": "https://asset-packagist.org"
-        }
-    ]
+	"name" : "pozitronik/yii2-relations",
+	"description" : "Relational attributes support for YII2 ActiveRecord",
+	"type" : "yii2-extension",
+	"keywords" : [
+		"yii2",
+		"activerecord",
+		"trait",
+		"relation"
+	],
+	"license" : "GPL-3.0",
+	"authors" : [
+		{
+			"name" : "Pavel Dubrovsky",
+			"email" : "antikillerxxl@gmail.com"
+		}
+	],
+	"minimum-stability" : "dev",
+	"require" : {
+		"php" : ">=8.0",
+		"pozitronik/yii2-helpers" : "^1.0.0"
+	},
+	"require-dev" : {
+		"yiisoft/yii2" : "dev-master",
+		"codeception/codeception" : "5.0.x-dev",
+		"codeception/module-asserts" : "*",
+		"codeception/module-yii2" : "*",
+		"codeception/module-db" : "*",
+		"vlucas/phpdotenv": "^5.4.1"
+	},
+	"autoload" : {
+		"psr-4" : {
+			"pozitronik\\relations\\" : "src"
+		}
+	},
+	"config" : {
+		"fxp-asset" : {
+			"enabled" : false
+		},
+		"allow-plugins" : {
+			"yiisoft/yii2-composer" : true
+		}
+	},
+	"repositories" : [
+		{
+			"type" : "composer",
+			"url" : "https://asset-packagist.org"
+		}
+	]
 }
