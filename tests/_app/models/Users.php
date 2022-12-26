@@ -4,6 +4,7 @@ declare(strict_types = 1);
 namespace app\models;
 
 use pozitronik\helpers\Utils;
+use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
 use yii\db\Exception;
 use yii\web\IdentityInterface;
@@ -111,16 +112,16 @@ class Users extends ActiveRecord implements IdentityInterface {
 	}
 
 	/**
-	 * @return RelUsersToBooks
+	 * @return ActiveQuery
 	 */
-	public function getRelUsersToBooks():RelUsersToBooks {
+	public function getRelUsersToBooks():ActiveQuery {
 		return $this->hasMany(RelUsersToBooks::class, ['user_id' => 'id']);
 	}
 
 	/**
-	 * @return Books[]
+	 * @return ActiveQuery
 	 */
-	public function getRelatedBooks():array {
+	public function getRelatedBooks():ActiveQuery {
 		return $this->hasMany(Books::class, ['id' => 'book_id'])->via('relUsersToBooks');
 	}
 
