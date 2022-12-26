@@ -2,6 +2,8 @@ Yii2-relations
 ==================
 Поддержка атрибутов ActiveRecord, задаваемых через связи.
 
+![Build Status](https://img.shields.io/github/actions/workflow/status/cusodede/yii2-relations/ci.yml?branch=master)
+
 Installation
 ------------
 
