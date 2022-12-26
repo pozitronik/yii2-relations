@@ -23,6 +23,7 @@ class BasicTest extends Unit {
 	protected function _before():void {
 		$this->tester->migrate();
 		$this->tester->grabFixture('users');
+		$this->tester->grabFixture('books');
 	}
 
 	/**
