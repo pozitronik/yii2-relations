@@ -179,7 +179,12 @@ class RelationsTest extends Unit {
 	 * @return void
 	 */
 	public function testEditRelations():void {
-
+		/** @var Users $user */
+		$user = Users::find()->where(['login' => 'admin'])->one();
+		$user->relatedBooks = Books::find()->where(['id' => [2, 6]])->all();
+		static::assertCount(2, RelUsersToBooks::find()->all());
+		$user->relatedBooks = Books::find()->where(['id' => [4, 8, 1]])->all();
+		static::assertCount(3, RelUsersToBooks::find()->all());
 	}
 
 	/**
@@ -189,7 +194,6 @@ class RelationsTest extends Unit {
 		/** @var Users $user */
 		$user = Users::find()->where(['login' => 'admin'])->one();
 		$user->relatedBooks = Books::find()->where(['id' => [2, 6]])->all();
-		$user->refresh();
 		static::assertCount(2, RelUsersToBooks::find()->all());
 		$user->relatedBooks = null;
 		static::assertCount(2, RelUsersToBooks::find()->all());
