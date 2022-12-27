@@ -27,6 +27,7 @@ use yii\db\StaleObjectException;
  */
 trait RelationsTrait {
 	private static ?bool $_modeAfterPrimary = null;
+	private static ?bool $_modeClearOnEmpty = null;
 
 	/**
 	 * Получение режима операций со связанными моделями:
@@ -43,6 +44,18 @@ trait RelationsTrait {
 	}
 
 	/**
+	 * Get behavior of what to do, if empty set or null are assigned to relation
+	 * true: all existed relations cleared
+	 * false: assignment ignored (by default)
+	 * Option should be defined globally in application config in components.relations.clearOnEmptyMode
+	 * @return bool
+	 * @throws Throwable
+	 */
+	public static function getClearOnEmptyMode():bool {
+		return static::$_modeClearOnEmpty ??= ArrayHelper::getValue(Yii::$app->components, 'relations.clearOnEmptyMode', false);
+	}
+
+	/**
 	 * Преобразует переданный параметр к единому виду
 	 * @param int|string|ActiveRecord $storage
 	 * @return int|string
@@ -52,7 +65,7 @@ trait RelationsTrait {
 	private static function extractKeyValue(int|string|ActiveRecord $storage) {
 		if (is_numeric($storage)) return (int)$storage;
 		if (is_object($storage)) return ArrayHelper::getValue($storage, 'primaryKey', new Exception("Класс {$storage->formName()} не имеет атрибута primaryKey"));
-		return (string)$storage; //suppose it string field name
+		return (string)$storage; //suppose it is a string field name
 	}
 
 	/**
@@ -198,12 +211,20 @@ trait RelationsTrait {
 	 * @param bool $backLink Если связь задана в "обратную сторону", т.е. основная модель присоединяется к вторичной.
 	 * @param null|bool $linkAfterPrimary true: связывание произойдёт только после сохранения основной модели, false: в момент присвоения свойства, null: глобальная настройка
 	 * @throws Throwable
+	 * @since 1.1.0: `clearOnEmptyMode` parameter now can define behaviour of empty data assignments
+	 * @see RelationsTrait::getClearOnEmptyMode()
 	 */
 	public static function linkModels(null|array|int|string|ActiveRecord $master, null|array|int|string|ActiveRecord $slave, bool $backLink = false, ?bool $linkAfterPrimary = null):void {
 		if (($backLink && empty($slave)) || (!$backLink && empty($master))) return;
 		/*Удалим разницу (она может быть полной при очистке)*/
 		static::dropDiffered($master, $slave, $backLink, $linkAfterPrimary);
-		if (empty($slave)) return;
+		if (empty($slave)) {
+			if (static::getClearOnEmptyMode()) {//false by default
+				static::clearLinks($master, $linkAfterPrimary);
+			} else {
+				return;
+			}
+		}
 
 		if (is_array($master)) {
 			foreach ($master as $master_item) {

@@ -14,6 +14,7 @@ use ReflectionClass;
 use Tests\Support\Helper\MigrationHelper;
 use Tests\Support\UnitTester;
 use Yii;
+use yii\base\InvalidConfigException;
 use yii\helpers\ArrayHelper;
 
 /**
@@ -32,6 +33,50 @@ class RelationsTest extends Unit {
 			'users' => UsersFixture::class,
 			'books' => BooksFixture::class
 		];
+	}
+
+	/**
+	 * Sets AfterPrimaryMode. Note: change is permanent on all tests scope
+	 * @param bool $mode
+	 * @return void
+	 * @throws InvalidConfigException
+	 * @see RelationsTrait::$_modeAfterPrimary
+	 */
+	private function setAfterPrimaryMode(bool $mode):void {
+		Yii::$app->set('relations', [
+			'class' => RelationsTrait::class,
+			'afterPrimaryMode' => $mode
+		]);
+		/* Unset default trait property value*/
+		$reflectedClass = new ReflectionClass(RelationsTrait::class);
+		$reflectedClass->setStaticPropertyValue('_modeAfterPrimary', null);
+		/* Unset trait model property value*/
+		$reflectedClass = new ReflectionClass(RelUsersToBooks::class);
+		$reflectedClass->setStaticPropertyValue('_modeAfterPrimary', null);
+
+		static::assertEquals($mode, RelUsersToBooks::getAfterPrimaryMode());
+	}
+
+	/**
+	 * Sets ClearOnEmptyMode. Note: change is permanent on all tests scope
+	 * @param bool $mode
+	 * @return void
+	 * @throws InvalidConfigException
+	 * @see RelationsTrait::$_modeAfterPrimary
+	 */
+	private function setClearOnEmptyMode(bool $mode):void {
+		Yii::$app->set('relations', [
+			'class' => RelationsTrait::class,
+			'clearOnEmptyMode' => $mode,
+		]);
+		/* Unset default trait property value*/
+		$reflectedClass = new ReflectionClass(RelationsTrait::class);
+		$reflectedClass->setStaticPropertyValue('_modeClearOnEmpty', null);
+		/* Unset trait model property value*/
+		$reflectedClass = new ReflectionClass(RelUsersToBooks::class);
+		$reflectedClass->setStaticPropertyValue('_modeClearOnEmpty', null);
+
+		static::assertEquals($mode, RelUsersToBooks::getClearOnEmptyMode());
 	}
 
 	/**
@@ -111,17 +156,7 @@ class RelationsTest extends Unit {
 	 * @see RelationsTrait::$_modeAfterPrimary
 	 */
 	public function testRelationsSaveAfterPrimary():void {
-		Yii::$app->set('relations', [
-			'class' => RelationsTrait::class,
-			'afterPrimaryMode' => true
-		]);
-		/*Change default trait property value*/
-		$reflectedClass = new ReflectionClass(RelationsTrait::class);
-		$reflectedClass->setStaticPropertyValue('_modeAfterPrimary', null);
-		/*Change trait model property value*/
-		$reflectedClass = new ReflectionClass(RelUsersToBooks::class);
-		$reflectedClass->setStaticPropertyValue('_modeAfterPrimary', null);
-
+		$this->setAfterPrimaryMode(true);
 		/** @var Users $user */
 		$user = Users::find()->where(['login' => 'admin'])->one();
 		$user->relatedBooks = [2, 4, 10];
@@ -137,6 +172,7 @@ class RelationsTest extends Unit {
 		$user->refresh();
 		static::assertCount(3, $user->relatedBooks);
 		static::assertInstanceOf(Books::class, $user->relatedBooks[0]);
+		$this->setAfterPrimaryMode(false);//return to default behaviour
 	}
 
 	/**
@@ -150,15 +186,33 @@ class RelationsTest extends Unit {
 	 * @return void
 	 */
 	public function testDeleteRelations():void {
-
+		$this->setClearOnEmptyMode(false);
+		/** @var Users $user */
+		$user = Users::find()->where(['login' => 'admin'])->one();
+		$user->relatedBooks = Books::find()->where(['id' => [2, 6]])->all();
+		$user->refresh();
+		static::assertCount(2, RelUsersToBooks::find()->all());
+		$user->relatedBooks = null;
+		static::assertCount(2, RelUsersToBooks::find()->all());
+		/* Changes behaviour: now empty assignments delete all relations*/
+		$this->setClearOnEmptyMode(true);
+		$user->relatedBooks = null;
+		static::assertCount(0, RelUsersToBooks::find()->all());
 	}
 
 	/**
 	 * If model deleted, its relations should be deleted too
 	 * @return void
+	 * @skip
 	 */
 	public function testDeleteModel():void {
-
+		/** @var Users $user */
+		$user = Users::find()->where(['login' => 'admin'])->one();
+		$user->relatedBooks = Books::find()->where(['id' => [2, 6]])->all();
+		$user->refresh();
+		static::assertCount(2, RelUsersToBooks::find()->all());
+		$user->delete();
+		static::assertCount(0, RelUsersToBooks::find()->all());
 	}
 
 }
