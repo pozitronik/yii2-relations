@@ -34,6 +34,7 @@ class BasicTest extends Unit {
 	}
 
 	/**
+	 * Tests, that all migrations and fixtures were applied
 	 * @return void
 	 */
 	public function testBasic():void {
@@ -42,41 +43,49 @@ class BasicTest extends Unit {
 	}
 
 	/**
+	 * Tests, that related model can be added via simple assignment
+	 * @return void
+	 */
+	public function testCreateRelationsSimple():void {
+		/** @var Users $user */
+		$user = Users::find()->where(['login' => 'admin'])->one();
+		static::assertCount(0, $user->relatedBooks);
+		$user->relatedBooks = Books::find()->where(['id' => 10])->one();
+		$user->refresh();
+		static::assertCount(1, $user->relatedBooks);
+		static::assertInstanceOf(Books::class, $user->relatedBooks[0]);
+		static::assertEquals(Books::find()->where(['id' => 10])->one(), $user->relatedBooks[0]);
+	}
+
+	/**
+	 * Tests, that related models can be added via their id
 	 * @return void
 	 */
 	public function testCreateRelationsViaId():void {
 		/** @var Users $user */
 		$user = Users::find()->where(['login' => 'admin'])->one();
-		$user->relatedBooks = [1, 5, 7];
-
-		$user->save();
-
-		$relations = RelUsersToBooks::find()->all();
-		static::assertCount(3, $relations);
-
+		$user->relatedBooks = [1, 5, '7'];
 		$user->refresh();
 		static::assertCount(3, $user->relatedBooks);
 		static::assertInstanceOf(Books::class, $user->relatedBooks[0]);
+
 	}
 
 	/**
+	 * Tests, that related models can be assigned as object array
 	 * @return void
 	 */
 	public function testCreateRelationsViaModels():void {
 		/** @var Users $user */
 		$user = Users::find()->where(['login' => 'admin'])->one();
-		$user->relatedBooks = [Books::find()->where(['id' => 2])->one(), Books::find()->where(['id' => 6])->one()];
-		$user->save();
-
-		$relations = RelUsersToBooks::find()->all();
-		static::assertCount(2, $relations);
-
+		$user->relatedBooks = Books::find()->where(['id' => [2, 6]])->all();
 		$user->refresh();
 		static::assertCount(2, $user->relatedBooks);
 		static::assertInstanceOf(Books::class, $user->relatedBooks[0]);
 	}
 
 	/**
+	 * Tests, that related models can be added via any way, even if they mixed
 	 * @return void
 	 */
 	public function testCreateRelationsViaMixed():void {
@@ -94,17 +103,21 @@ class BasicTest extends Unit {
 	}
 
 	/**
+	 * Test the `modeAfterPrimary` mode
 	 * @return void
+	 * @see RelationsTrait::$_modeAfterPrimary
 	 */
 	public function testRelationsSaveAfterPrimary():void {
 		Yii::$app->set('relations', [
 			'class' => RelationsTrait::class,
 			'afterPrimaryMode' => true
 		]);
-
+		/*Change default trait property value*/
 		$reflectedClass = new ReflectionClass(RelationsTrait::class);
 		$reflectedClass->setStaticPropertyValue('_modeAfterPrimary', null);
-
+		/*Change trait model property value*/
+		$reflectedClass = new ReflectionClass(RelUsersToBooks::class);
+		$reflectedClass->setStaticPropertyValue('_modeAfterPrimary', null);
 
 		/** @var Users $user */
 		$user = Users::find()->where(['login' => 'admin'])->one();
@@ -112,7 +125,7 @@ class BasicTest extends Unit {
 		$relations = RelUsersToBooks::find()->all();
 		static::assertCount(0, $relations);
 		static::assertCount(0, $user->relatedBooks);
-
+		/*when afterPrimaryMode is enabled, all relations should be saved only when primary model save*/
 		$user->save();
 
 		$relations = RelUsersToBooks::find()->all();
