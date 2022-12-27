@@ -186,7 +186,6 @@ class RelationsTest extends Unit {
 	 * @return void
 	 */
 	public function testDeleteRelations():void {
-		$this->setClearOnEmptyMode(false);
 		/** @var Users $user */
 		$user = Users::find()->where(['login' => 'admin'])->one();
 		$user->relatedBooks = Books::find()->where(['id' => [2, 6]])->all();
@@ -198,6 +197,7 @@ class RelationsTest extends Unit {
 		$this->setClearOnEmptyMode(true);
 		$user->relatedBooks = null;
 		static::assertCount(0, RelUsersToBooks::find()->all());
+		$this->setClearOnEmptyMode(false);
 	}
 
 	/**
