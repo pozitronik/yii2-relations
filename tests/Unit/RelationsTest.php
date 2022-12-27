@@ -13,8 +13,12 @@ use pozitronik\relations\traits\RelationsTrait;
 use ReflectionClass;
 use Tests\Support\Helper\MigrationHelper;
 use Tests\Support\UnitTester;
+use Throwable;
 use Yii;
 use yii\base\InvalidConfigException;
+use yii\base\InvalidRouteException;
+use yii\console\Exception;
+use yii\db\StaleObjectException;
 use yii\helpers\ArrayHelper;
 
 /**
@@ -26,8 +30,10 @@ class RelationsTest extends Unit {
 
 	/**
 	 * @return string[]
+	 * @throws Exception
+	 * @throws InvalidRouteException
 	 */
-	public function _fixtures() {
+	public function _fixtures():array {
 		MigrationHelper::migrateFresh();
 		return [
 			'users' => UsersFixture::class,
@@ -40,6 +46,7 @@ class RelationsTest extends Unit {
 	 * @param bool $mode
 	 * @return void
 	 * @throws InvalidConfigException
+	 * @throws Throwable
 	 * @see RelationsTrait::$_modeAfterPrimary
 	 */
 	private function setAfterPrimaryMode(bool $mode):void {
@@ -62,6 +69,7 @@ class RelationsTest extends Unit {
 	 * @param bool $mode
 	 * @return void
 	 * @throws InvalidConfigException
+	 * @throws Throwable
 	 * @see RelationsTrait::$_modeAfterPrimary
 	 */
 	private function setClearOnEmptyMode(bool $mode):void {
@@ -153,6 +161,8 @@ class RelationsTest extends Unit {
 	/**
 	 * Test the `modeAfterPrimary` mode
 	 * @return void
+	 * @throws InvalidConfigException
+	 * @throws Throwable
 	 * @see RelationsTrait::$_modeAfterPrimary
 	 */
 	public function testRelationsSaveAfterPrimary():void {
@@ -189,6 +199,8 @@ class RelationsTest extends Unit {
 
 	/**
 	 * @return void
+	 * @throws InvalidConfigException
+	 * @throws Throwable
 	 */
 	public function testDeleteRelations():void {
 		/** @var Users $user */
@@ -207,8 +219,11 @@ class RelationsTest extends Unit {
 	/**
 	 * If model deleted, its relations should be deleted too
 	 * @return void
+	 * @throws StaleObjectException
+	 * @throws Throwable
 	 */
 	public function testDeleteModel():void {
+		/** @var Users $user */
 		$user = Users::find()->where(['login' => 'admin'])->one();
 		$user->relatedBooks = Books::find()->where(['id' => [2, 6]])->all();
 		$user->refresh();
