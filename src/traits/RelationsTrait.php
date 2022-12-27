@@ -39,7 +39,7 @@ trait RelationsTrait {
 	 * @throws Throwable
 	 */
 	public static function getAfterPrimaryMode(?bool $mode = null):bool {
-		return $mode??(self::$_modeAfterPrimary ??= ArrayHelper::getValue(Yii::$app->components, 'relations.afterPrimaryMode', false));
+		return $mode??(static::$_modeAfterPrimary ??= ArrayHelper::getValue(Yii::$app->components, 'relations.afterPrimaryMode', false));
 	}
 
 	/**
