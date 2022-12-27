@@ -14,6 +14,7 @@ use ReflectionClass;
 use Tests\Support\Helper\MigrationHelper;
 use Tests\Support\UnitTester;
 use Yii;
+use yii\helpers\ArrayHelper;
 
 /**
  * ExampleTest
@@ -68,7 +69,7 @@ class BasicTest extends Unit {
 		$user->refresh();
 		static::assertCount(3, $user->relatedBooks);
 		static::assertInstanceOf(Books::class, $user->relatedBooks[0]);
-
+		static::assertEquals($user->relatedBooks, Books::find()->where(['id' => ArrayHelper::getColumn($user->relatedBooks, 'id')])->all());
 	}
 
 	/**
@@ -82,6 +83,7 @@ class BasicTest extends Unit {
 		$user->refresh();
 		static::assertCount(2, $user->relatedBooks);
 		static::assertInstanceOf(Books::class, $user->relatedBooks[0]);
+		static::assertEquals($user->relatedBooks, Books::find()->where(['id' => ArrayHelper::getColumn($user->relatedBooks, 'id')])->all());
 	}
 
 	/**
@@ -100,6 +102,7 @@ class BasicTest extends Unit {
 		$user->refresh();
 		static::assertCount(3, $user->relatedBooks);
 		static::assertInstanceOf(Books::class, $user->relatedBooks[0]);
+		static::assertEquals($user->relatedBooks, Books::find()->where(['id' => ArrayHelper::getColumn($user->relatedBooks, 'id')])->all());
 	}
 
 	/**
@@ -151,6 +154,7 @@ class BasicTest extends Unit {
 	}
 
 	/**
+	 * If model deleted, its relations should be deleted too
 	 * @return void
 	 */
 	public function testDeleteModel():void {
