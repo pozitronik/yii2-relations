@@ -297,7 +297,7 @@ trait RelationsTrait {
 	 *
 	 * Передавать массивы строк/идентификаторов нельзя (только массив моделей)
 	 */
-	public static function unlinkModels(null|array|int|string|ActiveRecord $master, null|array|int|string|ActiveRecord $slave, bool $clearAfterPrimary = true):void {
+	public static function unlinkModels(null|array|int|string|ActiveRecord $master, null|array|int|string|ActiveRecord $slave, ?bool $clearAfterPrimary = null):void {
 		if (empty($master) || empty($slave)) return;
 		if (is_array($master)) {
 			foreach ($master as $master_item) {
@@ -320,7 +320,7 @@ trait RelationsTrait {
 	 * @param null|bool $clearAfterPrimary true: удаление произойдёт только после сохранения основной модели, false: в момент изменения свойства, null: глобальная настройка
 	 * @throws Throwable
 	 */
-	public static function clearLinks(null|array|int|string|ActiveRecord $master, bool $clearAfterPrimary = true):void {
+	public static function clearLinks(null|array|int|string|ActiveRecord $master, ?bool $clearAfterPrimary = null):void {
 		if (empty($master)) return;
 
 		if (is_array($master)) {
@@ -329,7 +329,7 @@ trait RelationsTrait {
 
 		foreach (static::findAll([static::getFirstAttributeName() => static::extractKeyValue($master)]) as $link) {
 			/** @var ActiveRecord $link */
-			if ($clearAfterPrimary) {
+			if (static::getAfterPrimaryMode($clearAfterPrimary)) {
 				$master->on(BaseActiveRecord::EVENT_AFTER_UPDATE, [__CLASS__, 'deleteLinkHandler'], [$link]);//see deleteLinkHandler()
 			} else {
 				static::deleteLink($link);
