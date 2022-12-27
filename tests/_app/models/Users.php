@@ -136,7 +136,7 @@ class Users extends ActiveRecord implements IdentityInterface {
 	 * @inheritDoc
 	 */
 	public function beforeDelete():void {
-		RelUsersToBooks::unlinkModels($this, $this->relUsersToBooks);
+		RelUsersToBooks::clearLinks($this);
 		parent::beforeDelete();
 	}
 

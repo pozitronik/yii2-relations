@@ -203,10 +203,8 @@ class RelationsTest extends Unit {
 	/**
 	 * If model deleted, its relations should be deleted too
 	 * @return void
-	 * @skip
 	 */
 	public function testDeleteModel():void {
-		/** @var Users $user */
 		$user = Users::find()->where(['login' => 'admin'])->one();
 		$user->relatedBooks = Books::find()->where(['id' => [2, 6]])->all();
 		$user->refresh();
