@@ -17,9 +17,9 @@ use Yii;
 use yii\helpers\ArrayHelper;
 
 /**
- * ExampleTest
+ * RelationsTest
  */
-class BasicTest extends Unit {
+class RelationsTest extends Unit {
 
 	protected UnitTester $tester;
 
