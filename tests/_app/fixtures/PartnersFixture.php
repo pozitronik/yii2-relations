@@ -1,7 +1,7 @@
 <?php
 declare(strict_types = 1);
 
-namespace _app\fixtures;
+namespace app\fixtures;
 
 use app\models\Partners;
 use yii\test\ActiveFixture;

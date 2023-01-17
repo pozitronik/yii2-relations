@@ -3,10 +3,12 @@ declare(strict_types = 1);
 
 namespace Tests\Unit;
 
+use app\fixtures\PartnersFixture;
 use app\fixtures\BooksFixture;
 use app\fixtures\UsersFixture;
 use app\models\Books;
 use app\models\RelUsersToBooks;
+use app\models\RelUsersToPartners;
 use app\models\Users;
 use Codeception\Test\Unit;
 use pozitronik\relations\traits\RelationsTrait;
@@ -37,7 +39,8 @@ class RelationsTest extends Unit {
 		MigrationHelper::migrateFresh();
 		return [
 			'users' => UsersFixture::class,
-			'books' => BooksFixture::class
+			'books' => BooksFixture::class,
+			'partners' => PartnersFixture::class,
 		];
 	}
 
@@ -230,6 +233,16 @@ class RelationsTest extends Unit {
 		static::assertCount(2, RelUsersToBooks::find()->all());
 		$user->delete();
 		static::assertCount(0, RelUsersToBooks::find()->all());
+	}
+
+	/**
+	 * @return void
+	 * @throws Throwable
+	 */
+	public function testSetBacklinkRelation():void {
+		$user = Users::find()->where(['login' => 'admin'])->one();
+		RelUsersToPartners::linkModels($user, [1, 3], true);
+		static::assertCount(2, RelUsersToPartners::find()->all());
 	}
 
 }
