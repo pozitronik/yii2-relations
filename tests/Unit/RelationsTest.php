@@ -238,10 +238,12 @@ class RelationsTest extends Unit {
 	/**
 	 * @return void
 	 * @throws Throwable
+	 * RelUsersToPartners have mixed up attributes in rules(), so it's required to
+	 * explicitly assign RelUsersToPartners::$primaryAttributeName and RelUsersToPartners::$secondaryAttributeName attributes
 	 */
-	public function testSetBacklinkRelation():void {
+	public function testExplicitPrimaryAndSecondaryAttributes():void {
 		$user = Users::find()->where(['login' => 'user4'])->one();
-		RelUsersToPartners::linkModels($user, ['1', '3'], true);
+		RelUsersToPartners::linkModels($user, ['1', '3']);
 		static::assertCount(2, RelUsersToPartners::find()->all());
 	}
 
