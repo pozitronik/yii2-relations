@@ -4,7 +4,7 @@ declare(strict_types = 1);
 use yii\db\Migration;
 
 /**
- * Class m000000_000000_test_user_migration
+ * Class m000000_000000_test_books_migration
  */
 class m000000_000001_test_books_migration extends Migration {
 

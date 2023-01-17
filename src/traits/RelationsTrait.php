@@ -24,6 +24,11 @@ use yii\db\StaleObjectException;
  * @see ActiveRecord::findAll()
  * @method static findOne(mixed $condition)
  * @see ActiveRecord::findOne()
+ *
+ * Explicit assignment of primary and secondary attributes names. If null, they'll taken from rules()
+ * @see static::getFirstAttributeName() and static::getSecondAttributeName()
+ * @property null|string $primaryAttributeName
+ * @property null|string $secondaryAttributeName
  */
 trait RelationsTrait {
 	private static ?bool $_modeAfterPrimary = null;
@@ -73,9 +78,9 @@ trait RelationsTrait {
 	 * @throws Throwable
 	 */
 	private static function getFirstAttributeName():string {
-		/** @var ActiveRecord $link */
+		/** @var ActiveRecord|static $link */
 		$link = new static();
-		return ArrayHelper::getValue($link->rules(), '0.0.0', new Exception('Не удалось получить атрибут для связи'));
+		return $link->primaryAttributeName??ArrayHelper::getValue($link->rules(), '0.0.0', new Exception('Не удалось получить атрибут для связи'));
 	}
 
 	/**
@@ -83,9 +88,9 @@ trait RelationsTrait {
 	 * @throws Throwable
 	 */
 	private static function getSecondAttributeName():string {
-		/** @var ActiveRecord $link */
+		/** @var ActiveRecord|static $link */
 		$link = new static();
-		return ArrayHelper::getValue($link->rules(), '0.0.1', new Exception('Не удалось получить атрибут для связи'));
+		return $link->secondaryAttributeName??ArrayHelper::getValue($link->rules(), '0.0.1', new Exception('Не удалось получить атрибут для связи'));
 	}
 
 	/**

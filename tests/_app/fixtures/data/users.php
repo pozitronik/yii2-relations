@@ -20,10 +20,10 @@ return [
 		'password' => 'some',
 		'username' => 'some user',
 	],
-	'partner1' => [
+	'user1' => [
 		'id' => 4,
-		'login' => 'partner1',
-		'password' => 'partner1',
-		'username' => 'partner1 user',
+		'login' => 'user1',
+		'password' => 'user1',
+		'username' => 'user1 user',
 	]
 ];

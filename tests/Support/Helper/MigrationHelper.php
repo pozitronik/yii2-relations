@@ -3,6 +3,7 @@ declare(strict_types = 1);
 
 namespace Tests\Support\Helper;
 
+use Yii;
 use yii\base\InvalidRouteException;
 use yii\console\controllers\MigrateController;
 use yii\console\Exception;
@@ -17,7 +18,7 @@ class MigrationHelper {
 	 * @throws Exception
 	 */
 	public static function migrate():void {
-		$migrationController = new MigrateController('migrations', \Yii::$app);
+		$migrationController = new MigrateController('migrations', Yii::$app);
 		$migrationController->interactive = false;
 		$migrationController->runAction('up');
 	}
@@ -28,7 +29,7 @@ class MigrationHelper {
 	 * @throws InvalidRouteException
 	 */
 	public static function migrateFresh():void {
-		$migrationController = new MigrateController('migrations', \Yii::$app);
+		$migrationController = new MigrateController('migrations', Yii::$app);
 		$migrationController->interactive = false;
 		$migrationController->runAction('fresh');
 	}
