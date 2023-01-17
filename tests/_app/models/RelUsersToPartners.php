@@ -1,10 +1,8 @@
 <?php
 declare(strict_types = 1);
 
-namespace app\models\users\active_record\relations;
+namespace app\models;
 
-use app\models\Partners;
-use app\models\Users;
 use pozitronik\relations\traits\RelationsTrait;
 use yii\db\ActiveQuery;
 use yii\db\ActiveRecord;
