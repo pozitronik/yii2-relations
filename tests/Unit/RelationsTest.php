@@ -242,7 +242,7 @@ class RelationsTest extends Unit {
 	 * explicitly assign RelUsersToPartners::$primaryAttributeName and RelUsersToPartners::$secondaryAttributeName attributes
 	 */
 	public function testExplicitPrimaryAndSecondaryAttributes():void {
-		$user = Users::find()->where(['login' => 'user4'])->one();
+		$user = Users::find()->where(['login' => 'user1'])->one();
 		RelUsersToPartners::linkModels($user, ['1', '3']);
 		static::assertCount(2, RelUsersToPartners::find()->all());
 	}
