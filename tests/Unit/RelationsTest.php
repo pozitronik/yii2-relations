@@ -240,8 +240,8 @@ class RelationsTest extends Unit {
 	 * @throws Throwable
 	 */
 	public function testSetBacklinkRelation():void {
-		$user = Users::find()->where(['login' => 'admin'])->one();
-		RelUsersToPartners::linkModels($user, [1, 3], true);
+		$user = Users::find()->where(['login' => 'user4'])->one();
+		RelUsersToPartners::linkModels($user, ['1', '3'], true);
 		static::assertCount(2, RelUsersToPartners::find()->all());
 	}
 

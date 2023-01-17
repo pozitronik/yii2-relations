@@ -36,6 +36,11 @@ class RelUsersToPartners extends ActiveRecord {
 			[['partner_id', 'user_id'], 'required'],
 			[['partner_id', 'user_id'], 'default', 'value' => null],
 			[['partner_id', 'user_id'], 'integer'],
+
+//			[['user_id', 'partner_id'], 'required'],
+//			[['user_id', 'partner_id'], 'default', 'value' => null],
+//			[['user_id', 'partner_id'], 'integer'],
+
 			[['user_id', 'partner_id'], 'unique', 'targetAttribute' => ['user_id', 'partner_id']],
 			[
 				['partner_id'],
