@@ -40,7 +40,7 @@ class m000000_000004_test_rel_users_to_partners_migration extends RelationMigrat
 			'fk-'.self::TABLE_NAME.'-user_id',
 			self::TABLE_NAME,
 			'user_id',
-			'sys_users',
+			'users',
 			'id',
 			'CASCADE',
 			'CASCADE'
