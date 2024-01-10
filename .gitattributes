@@ -5,3 +5,4 @@
 /docker                     export-ignore
 /.github                    export-ignore
 /docker-compose.yml         export-ignore
+/.idea                      export-ignore
