@@ -61,7 +61,7 @@ class Users extends ActiveRecord implements IdentityInterface {
 	/**
 	 * @inheritDoc
 	 */
-	public static function findIdentityByAccessToken($token, $type = null):?IdentityInterface {
+	public static function findIdentityByAccessToken($token, ?string $type = null):?IdentityInterface {
 		return null;
 	}
 
