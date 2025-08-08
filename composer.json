@@ -22,7 +22,7 @@
 	},
 	"require-dev" : {
 		"yiisoft/yii2" : "dev-master",
-		"codeception/codeception" : "5.0.x-dev",
+		"codeception/codeception" : "^5.0.0",
 		"codeception/module-asserts" : "*",
 		"codeception/module-yii2" : "*",
 		"codeception/module-db" : "*",
