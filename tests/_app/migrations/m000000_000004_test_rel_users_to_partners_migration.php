@@ -13,7 +13,7 @@ class m000000_000004_test_rel_users_to_partners_migration extends RelationMigrat
 	/**
 	 * {@inheritdoc}
 	 */
-	public function safeUp() {
+	public function safeUp():void {
 		$this->createTable(self::TABLE_NAME, [
 			'id' => $this->primaryKey()->comment('Идентификатор'),
 			'partner_id' => $this->integer()->notNull()->comment('Идентификатор партнёра'),
@@ -63,7 +63,7 @@ class m000000_000004_test_rel_users_to_partners_migration extends RelationMigrat
 	/**
 	 * {@inheritdoc}
 	 */
-	public function safeDown() {
+	public function safeDown():void {
 		$this->dropTable(self::TABLE_NAME);
 	}
 
